@@ -7,3 +7,10 @@ services:
     startCommand: npm start
     healthCheckPath: /healthz
     autoDeploy: true
+    envVars:
+      # Optional. Set this to a PostgreSQL connection string (e.g. a free Neon
+      # database) to keep shared quiz codes across restarts and redeploys.
+      # Leave it unset and quizzes fall back to on-disk storage, which Render's
+      # free tier wipes on every deploy.
+      - key: DATABASE_URL
+        sync: false

@@ -1,11 +1,13 @@
 'use strict';
 const path = require('path');
-const fs = require('fs');
 const http = require('http');
 const express = require('express');
 const { Server } = require('socket.io');
 const CATALOG = require('./public/js/moki-catalog.js');
 const BANK = require('./question-bank.js');
+const { create: createStore, normalizeCode } = require('./store.js');
+
+const store = createStore();
 
 const app = express();
 app.use(express.json({ limit: '3mb' }));
@@ -574,83 +576,42 @@ app.post('/api/spark', (req, res) => {
 /* ------------------------------------------------------------------ *
  * quiz library - share a quiz with a short code instead of a file
  * ------------------------------------------------------------------ */
-const DATA_DIR = process.env.MOKI_DATA_DIR || path.join(__dirname, 'data');
-const STORE_FILE = path.join(DATA_DIR, 'quizzes.json');
-const MAX_STORED = 3000;
-
-let library = { items: {} };
-try {
-  const raw = JSON.parse(fs.readFileSync(STORE_FILE, 'utf8'));
-  if (raw && typeof raw === 'object' && raw.items) library = { items: raw.items };
-} catch (e) { /* first boot, or no disk - start empty */ }
-
-let saveTimer = null;
-function persist() {
-  if (saveTimer) return;
-  saveTimer = setTimeout(() => {
-    saveTimer = null;
-    try {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-      fs.writeFileSync(STORE_FILE, JSON.stringify(library));
-    } catch (e) { /* read-only disk: codes still work until restart */ }
-  }, 400);
-}
-
-/* Random codes, not sequential - a sequential code would let anyone walk the
-   whole library by counting up. The alphabet drops 0/O/1/I/S/5 so a code read
-   off a screen cannot be mistyped into someone else's quiz. */
-const CODE_ALPHABET = '2346789ABCDEFGHJKLMNPQRTUVWXYZ';
-const CODE_LEN = 5;
-
-function makeCode() {
-  for (let attempt = 0; attempt < 200; attempt++) {
-    let body = '';
-    for (let i = 0; i < CODE_LEN; i++) {
-      body += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
-    }
-    const code = 'MOKI-' + body;
-    if (!library.items[code]) return code;
-  }
-  return null;
-}
-
-// accepts "MOKI-X7K4P", "moki x7k4p" or plain "x7k4p"
-function normalizeCode(input) {
-  const body = String(input == null ? '' : input)
-    .toUpperCase()
-    .replace(/^MOKI/, '')
-    .replace(/[^A-Z0-9]/g, '');
-  if (body.length !== CODE_LEN) return '';
-  return 'MOKI-' + body;
-}
-
-app.post('/api/quiz', (req, res) => {
+app.post('/api/quiz', async (req, res) => {
   const result = validateQuiz(req.body && req.body.quiz);
   if (result.error) return res.status(400).json({ ok: false, error: result.error });
-
-  const codes = Object.keys(library.items);
-  if (codes.length >= MAX_STORED) {
-    codes
-      .sort((a, b) => (library.items[a].createdAt || 0) - (library.items[b].createdAt || 0))
-      .slice(0, Math.ceil(MAX_STORED * 0.1))
-      .forEach(c => { delete library.items[c]; });
+  try {
+    const code = await store.put(result.quiz);
+    if (!code) return res.status(503).json({ ok: false, error: 'Quiz library is busy, try again.' });
+    res.json({ ok: true, code, title: result.quiz.title, questionCount: result.quiz.questions.length });
+  } catch (err) {
+    console.error('quiz save failed:', err.message);
+    res.status(500).json({ ok: false, error: 'Could not save the quiz right now.' });
   }
-
-  const code = makeCode();
-  if (!code) return res.status(503).json({ ok: false, error: 'Quiz library is busy, try again.' });
-  library.items[code] = { quiz: result.quiz, createdAt: Date.now() };
-  persist();
-  res.json({ ok: true, code, title: result.quiz.title, questionCount: result.quiz.questions.length });
 });
 
-app.get('/api/quiz/:code', (req, res) => {
+app.get('/api/quiz/:code', async (req, res) => {
   const code = normalizeCode(req.params.code);
-  const entry = code && library.items[code];
-  if (!entry) return res.status(404).json({ ok: false, error: 'No quiz found with that code.' });
-  res.json({ ok: true, code, quiz: entry.quiz });
+  if (!code) return res.status(404).json({ ok: false, error: 'No quiz found with that code.' });
+  try {
+    const quiz = await store.get(code);
+    if (!quiz) return res.status(404).json({ ok: false, error: 'No quiz found with that code.' });
+    res.json({ ok: true, code, quiz });
+  } catch (err) {
+    console.error('quiz load failed:', err.message);
+    res.status(500).json({ ok: false, error: 'Could not reach the quiz library.' });
+  }
 });
 
 app.get('/healthz', (_req, res) => res.send('ok'));
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log('MOKI running on http://localhost:' + PORT));
+
+/* The quiz library is the only thing that touches storage. If it fails to
+   initialise the server still starts - live games are in memory and keep
+   working; only quiz codes are unavailable. */
+store.init()
+  .then(where => console.log('MOKI quiz library: ' + where))
+  .catch(err => console.error('MOKI quiz library unavailable:', err.message))
+  .finally(() => {
+    server.listen(PORT, () => console.log('MOKI running on http://localhost:' + PORT));
+  });

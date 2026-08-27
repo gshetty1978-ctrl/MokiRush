@@ -102,10 +102,37 @@ people's quizzes. The alphabet leaves out `0 O 1 I 5 S` so a code read off a scr
 can't be mistyped into someone else's quiz. Input is forgiving: `MOKI-X7K4P`,
 `moki x7k4p` and `x7k4p` all work.
 
-Quizzes live in `data/quizzes.json` (override the folder with `MOKI_DATA_DIR`).
-**On Render's free tier the disk is wiped on every deploy and restart**, so treat
-codes as short-lived unless you attach a persistent disk. The library holds 3000
-quizzes and drops the oldest beyond that.
+The library holds 3000 quizzes and drops the oldest beyond that.
+
+### Where quizzes are stored
+
+`store.js` picks its backend from the environment — nothing else in the app knows
+the difference:
+
+| `DATABASE_URL` | Backend | Survives a restart? |
+| --- | --- | --- |
+| not set | `data/quizzes.json` on disk (override the folder with `MOKI_DATA_DIR`) | Locally yes; on Render's free tier **no** — the disk is wiped on every deploy |
+| set | PostgreSQL, table `moki_quizzes` | Yes |
+
+Live games always live in memory either way. If the database is unreachable the
+server still starts and games run normally — only quiz codes are unavailable, and
+the creator says so instead of hanging.
+
+### Free database on Neon (recommended)
+
+Render's own free Postgres is deleted after 30 days; [Neon](https://neon.com)'s free
+tier has no expiry.
+
+1. Sign up at <https://neon.com> and create a project (any region near you).
+2. Copy the **connection string** — it looks like
+   `postgresql://user:password@ep-xxx.region.aws.neon.tech/neondb?sslmode=require`.
+3. In Render: your service → **Environment** → **Add Environment Variable**
+   - Key: `DATABASE_URL`
+   - Value: the connection string
+4. Save. Render redeploys, and the log shows `MOKI quiz library: postgres`.
+
+The table is created automatically on first boot — there is no migration to run.
+Supabase or Render Postgres work identically; only the connection string changes.
 
 ---
 
