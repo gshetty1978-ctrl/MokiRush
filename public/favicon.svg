@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 64 64">
+
+  <!-- Background -->
+  <rect width="64" height="64" rx="16"
+        fill="#6C5CE7"/>
+
+  <!-- Ears -->
+  <circle cx="12" cy="33" r="10"
+          fill="#FFD96A"
+          stroke="#241B5B"
+          stroke-width="4"/>
+
+  <circle cx="52" cy="33" r="10"
+          fill="#FFD96A"
+          stroke="#241B5B"
+          stroke-width="4"/>
+
+  <!-- MOKI face -->
+  <circle cx="32" cy="34" r="22"
+          fill="#FFD96A"
+          stroke="#241B5B"
+          stroke-width="4"/>
+
+  <!-- Eyes -->
+  <circle cx="25" cy="32" r="3.5"
+          fill="#241B5B"/>
+
+  <circle cx="39" cy="32" r="3.5"
+          fill="#241B5B"/>
+
+  <!-- Smile -->
+  <path d="M25 40 Q32 46 39 40"
+        fill="none"
+        stroke="#241B5B"
+        stroke-width="3"
+        stroke-linecap="round"/>
+
+  <!-- Tiny crown -->
+  <path d="M21 16 L24 7 L31 13 L32 6 L39 13 L43 7 L43 17 Z"
+        fill="#FFD43B"
+        stroke="#241B5B"
+        stroke-width="3"
+        stroke-linejoin="round"/>
+
+</svg>
