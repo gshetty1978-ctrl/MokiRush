@@ -90,27 +90,22 @@ server at the end of a game (participation + correct answers + podium bonus).
 
 ---
 
-## Quiz JSON format
+## Sharing quizzes with a code
 
-Export/Import in the creator uses this shape:
+Nobody downloads or uploads a file. In the creator:
 
-```json
-{
-  "title": "Space Showdown",
-  "topic": "space",
-  "questions": [
-    {
-      "text": "Which planet is known as the Red Planet?",
-      "answers": ["Mars", "Venus", "Jupiter", "Mercury"],
-      "correct": 0,
-      "time": 20,
-      "image": ""
-    }
-  ]
-}
-```
+- **Share this quiz** saves it on the server and shows a code like `MOKI-X7K4P`.
+- **Load a quiz code** pulls that quiz into anyone else's creator.
 
-Invalid files are rejected with a message instead of breaking the creator.
+Codes are random, not sequential, so nobody can count upward through other
+people's quizzes. The alphabet leaves out `0 O 1 I 5 S` so a code read off a screen
+can't be mistyped into someone else's quiz. Input is forgiving: `MOKI-X7K4P`,
+`moki x7k4p` and `x7k4p` all work.
+
+Quizzes live in `data/quizzes.json` (override the folder with `MOKI_DATA_DIR`).
+**On Render's free tier the disk is wiped on every deploy and restart**, so treat
+codes as short-lived unless you attach a persistent disk. The library holds 3000
+quizzes and drops the oldest beyond that.
 
 ---
 

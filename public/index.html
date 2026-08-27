@@ -55,11 +55,34 @@
       <button class="btn ghost sm" data-go="home">← Home</button>
       <div class="mini">GAME CREATOR</div>
       <div class="row">
-        <button class="btn ghost sm" id="btnImport">Import JSON</button>
-        <button class="btn ghost sm" id="btnExport">Export JSON</button>
+        <button class="btn ghost sm" id="btnLoadCode">Load a quiz code</button>
+        <button class="btn ghost sm" id="btnShare">Share this quiz</button>
       </div>
     </div>
-    <input type="file" id="fileImport" accept="application/json,.json" hidden>
+
+    <div class="card" id="shareBox" hidden style="margin-bottom:14px">
+      <div class="spread">
+        <div>
+          <label style="margin:0">Quiz code</label>
+          <div id="shareCode" style="font-size:34px;font-weight:900;letter-spacing:3px;color:var(--grape)">MOKI-XXXXX</div>
+          <p class="hint" id="shareHint">Anyone can load this quiz with that code.</p>
+        </div>
+        <div class="row">
+          <button class="btn sm mint" id="btnCopyCode">Copy code</button>
+          <button class="btn sm ghost" id="btnCloseShare" style="color:var(--ink);border-color:#E3DDF7">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="loadBox" hidden style="margin-bottom:14px">
+      <label for="loadCodeInput">Enter a quiz code</label>
+      <div class="row">
+        <input id="loadCodeInput" class="grow" maxlength="14" placeholder="MOKI-X7K4P" autocomplete="off">
+        <button class="btn sm gold" id="btnLoadGo">Load</button>
+        <button class="btn sm ghost" id="btnCloseLoad" style="color:var(--ink);border-color:#E3DDF7">Cancel</button>
+      </div>
+      <p class="hint" style="margin-top:8px">This replaces the questions currently in your creator.</p>
+    </div>
 
     <div class="card">
       <div class="two">

@@ -401,49 +401,63 @@
       }).catch(function () { msgBox('createMsg', 'Spark is offline right now - add questions manually.'); });
   };
 
-  $('btnExport').onclick = function () {
+  /* ---- share / load a quiz by code (no file downloads) ---- */
+  $('btnShare').onclick = function () {
     saveQuiz();
-    var blob = new Blob([JSON.stringify(quiz, null, 2)], { type: 'application/json' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = (quiz.title || 'moki-quiz').replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '.json';
-    a.click();
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    if (!quiz.questions.length) { msgBox('createMsg', 'Add some questions before sharing.'); return; }
+    $('loadBox').hidden = true;
+    msgBox('createMsg', 'Saving your quiz…', true);
+    fetch('/api/quiz', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quiz: quiz })
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) {
+        if (!res.ok || !res.d.ok) { msgBox('createMsg', res.d.error || 'Could not save the quiz.'); return; }
+        msgBox('createMsg', '');
+        $('shareCode').textContent = res.d.code;
+        $('shareHint').textContent = '"' + res.d.title + '" · ' + res.d.questionCount +
+          ' questions. Anyone can load it with this code.';
+        $('shareBox').hidden = false;
+        $('btnCopyCode').textContent = 'Copy code';
+        SFX.good();
+      }).catch(function () { msgBox('createMsg', 'Could not reach the server.'); });
   };
-  $('btnImport').onclick = function () { $('fileImport').click(); };
-  $('fileImport').onchange = function () {
-    var f = this.files && this.files[0];
-    if (!f) return;
-    var fr = new FileReader();
-    fr.onload = function () {
-      try {
-        var data = JSON.parse(String(fr.result));
-        if (!data || !Array.isArray(data.questions)) throw new Error('bad');
-        quiz = {
-          title: String(data.title || '').slice(0, 60),
-          topic: String(data.topic || '').slice(0, 40),
-          questions: data.questions.slice(0, 60).map(function (q) {
-            var ans = Array.isArray(q.answers) ? q.answers.slice(0, 4) : [];
-            while (ans.length < 4) ans.push('');
-            return {
-              text: String(q.text || '').slice(0, 200),
-              answers: ans.map(function (a) { return String(a || '').slice(0, 100); }),
-              correct: [0, 1, 2, 3].indexOf(Number(q.correct)) >= 0 ? Number(q.correct) : 0,
-              time: Number(q.time) > 0 ? Math.min(120, Math.max(5, Number(q.time))) : 20,
-              image: typeof q.image === 'string' ? q.image.slice(0, 600) : ''
-            };
-          })
-        };
+  $('btnCopyCode').onclick = function () {
+    var code = $('shareCode').textContent;
+    var done = function () { $('btnCopyCode').textContent = 'Copied!'; SFX.tap(); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(done, function () { toast(code); });
+    } else { toast(code); }
+  };
+  $('btnCloseShare').onclick = function () { $('shareBox').hidden = true; };
+  $('btnCloseLoad').onclick = function () { $('loadBox').hidden = true; };
+
+  $('btnLoadCode').onclick = function () {
+    $('shareBox').hidden = true;
+    $('loadBox').hidden = false;
+    $('loadCodeInput').focus();
+  };
+  $('loadCodeInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') $('btnLoadGo').click();
+  });
+  $('btnLoadGo').onclick = function () {
+    var body = $('loadCodeInput').value.trim().toUpperCase()
+      .replace(/^MOKI/, '').replace(/[^A-Z0-9]/g, '');
+    if (body.length !== 5) { msgBox('createMsg', 'Enter a full code, like MOKI-X7K4P.'); return; }
+    fetch('/api/quiz/' + encodeURIComponent(body))
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) {
+        if (!res.ok || !res.d.ok) { msgBox('createMsg', res.d.error || 'No quiz found with that code.'); SFX.bad(); return; }
+        quiz = res.d.quiz;
         $('qzTitle').value = quiz.title;
         $('qzTopic').value = quiz.topic;
         saveQuiz(); renderQList();
-        msgBox('createMsg', 'Imported ' + quiz.questions.length + ' questions.', true);
-      } catch (e) {
-        msgBox('createMsg', 'That file is not valid MOKI quiz JSON.');
-      }
-      $('fileImport').value = '';
-    };
-    fr.readAsText(f);
+        $('loadBox').hidden = true;
+        $('loadCodeInput').value = '';
+        msgBox('createMsg', 'Loaded ' + res.d.code + ' - ' + quiz.questions.length + ' questions.', true);
+        SFX.good();
+      }).catch(function () { msgBox('createMsg', 'Could not reach the server.'); });
   };
 
   /* ---------------- game state ---------------- */
