@@ -295,3 +295,14 @@ p.s{color:#E4DBFF;font-weight:600;margin:0 0 16px}
   *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
   #bg{animation:none}
 }
+
+/* ---------- join QR ---------- */
+.join-split{display:flex;align-items:center;gap:18px;justify-content:center;flex-wrap:wrap}
+.qr-card{background:#fff;border-radius:var(--r-md);padding:10px 10px 6px;box-shadow:var(--shadow-sm);
+  display:flex;flex-direction:column;align-items:center;gap:2px}
+.qr-card svg{display:block;width:150px;height:150px}
+.qr-card span{color:var(--ink-2);font-size:12px;font-weight:800;letter-spacing:.4px}
+@media (max-width:560px){
+  .qr-card svg{width:118px;height:118px}
+  .join-split{gap:12px}
+}

@@ -492,10 +492,25 @@
       $('hostTitle').textContent = res.quiz.title;
       $('hostQCount').textContent = res.quiz.questions.length;
       $('hostUrl').textContent = location.host;
+      showJoinQr(res.pin);
       show('hostlobby');
       SFX.join();
     });
   };
+
+  /* Renders the join link as a QR so players can scan instead of typing. */
+  function showJoinQr(pin) {
+    var card = $('hostQrCard');
+    var box = $('hostQr');
+    if (!card || !box) return;
+    try {
+      box.innerHTML = window.MOKIQR.svg(location.origin + '/#' + pin, { dark: '#1A1531' });
+      card.hidden = false;
+    } catch (e) {
+      card.hidden = true;   // never let a QR failure block hosting
+    }
+  }
+
   $('btnStartGame').onclick = function () {
     socket.emit('host:start', {}, function (res) {
       if (!res || !res.ok) toast((res && res.error) || 'Could not start.');

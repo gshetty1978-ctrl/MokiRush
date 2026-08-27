@@ -136,6 +136,16 @@ Supabase or Render Postgres work identically; only the connection string changes
 
 ---
 
+## Joining by QR
+
+The host lobby shows a QR code next to the PIN. It encodes `<origin>/#<pin>`, and
+the client reads that hash on load to pre-fill the PIN, so scanning drops a player
+straight onto the join screen.
+
+`public/js/qr.js` is a small from-scratch encoder (byte mode, ECC level M,
+versions 1-10) - no library, no CDN, no image service, so it works offline. If it
+ever throws, the card simply stays hidden and the PIN still works.
+
 ## Accessibility
 
 - Answers are reachable by keyboard; players can also press **1–4** to answer.
