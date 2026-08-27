@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#3A17A0">
+<title>MOKI - Live Multiplayer Quiz Party</title>
+<meta name="description" content="MOKI is a fast, colourful live multiplayer knowledge game. Make a quiz about anything, share a 6-digit PIN and play together.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%235B2BD6'/><circle cx='38' cy='44' r='7' fill='%23fff'/><circle cx='62' cy='44' r='7' fill='%23fff'/><path d='M36 64q14 14 28 0' stroke='%23FFC93C' stroke-width='7' fill='none' stroke-linecap='round'/></svg>">
+</head>
+<body>
+<div id="bg"></div>
+<div class="blob"></div><div class="blob"></div><div class="blob"></div><div class="blob"></div>
+<canvas id="confetti"></canvas>
+
+<!-- ================= HOME ================= -->
+<section id="s-home" class="screen active">
+  <div class="wrap">
+    <div style="height:14px"></div>
+    <div class="brand"><h1><span>M</span><span>O</span><span>K</span><span>I</span></h1></div>
+    <p class="tag">Quiz anything. Play together. Be the fastest MOKI in the room.</p>
+
+    <div class="row" style="justify-content:center;margin-bottom:22px">
+      <div id="homeMoki" style="width:170px"></div>
+    </div>
+
+    <div class="menu">
+      <button class="menu-item mi-1" data-go="create"><span class="emoji">🎬</span>Create Game</button>
+      <button class="menu-item mi-2" data-go="join"><span class="emoji">🎯</span>Join Game</button>
+      <button class="menu-item mi-3" data-go="customize"><span class="emoji">🎨</span>Customize MOKI</button>
+      <button class="menu-item mi-4" data-go="profile"><span class="emoji">🏅</span>Profile</button>
+    </div>
+
+    <div class="card glass" style="margin-top:20px">
+      <div class="spread">
+        <div><b id="homeName">Player</b> · Level <b id="homeLevel">1</b></div>
+        <div class="row"><button class="btn ghost sm" id="btnSound">🔊 Sound: on</button></div>
+      </div>
+      <div class="xpbar" style="margin-top:10px"><i id="homeXp" style="width:0%"></i></div>
+    </div>
+    <p class="center" style="color:#CDBEFF;font-size:13px;margin-top:16px">
+      Host on a big screen · players join from their phones at this same address.
+    </p>
+  </div>
+</section>
+
+<!-- ================= CREATE ================= -->
+<section id="s-create" class="screen">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="btn ghost sm" data-go="home">← Home</button>
+      <div class="mini">GAME CREATOR</div>
+      <div class="row">
+        <button class="btn ghost sm" id="btnImport">Import JSON</button>
+        <button class="btn ghost sm" id="btnExport">Export JSON</button>
+      </div>
+    </div>
+    <input type="file" id="fileImport" accept="application/json,.json" hidden>
+
+    <div class="card">
+      <div class="two">
+        <div>
+          <label for="qzTitle">Quiz title</label>
+          <input id="qzTitle" maxlength="60" placeholder="My MOKI Showdown">
+        </div>
+        <div>
+          <label for="qzTopic">Topic (type anything)</label>
+          <input id="qzTopic" maxlength="40" placeholder="Space, K-pop, Class 8 Science, my family…" list="topicList">
+          <datalist id="topicList"></datalist>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn mint sm" id="btnSpark">✨ MOKI Spark: suggest questions</button>
+        <span class="hint">Offline generator - no API keys, no cost.</span>
+      </div>
+      <div id="createMsg"></div>
+    </div>
+
+    <div class="row" style="margin:16px 0">
+      <button class="btn gold" id="btnAddQ">+ Add question</button>
+      <span class="grow"></span>
+      <button class="btn pink" id="btnHostStart">Start game →</button>
+    </div>
+
+    <div class="qlist" id="qList"></div>
+    <div style="height:40px"></div>
+  </div>
+</section>
+
+<!-- ================= JOIN ================= -->
+<section id="s-join" class="screen">
+  <div class="wrap-sm">
+    <div class="topbar"><button class="btn ghost sm" data-go="home">← Home</button><div class="mini">JOIN</div><span></span></div>
+    <div class="card">
+      <label for="joinPin">Game PIN</label>
+      <input id="joinPin" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="000000">
+      <label for="joinNick" style="margin-top:14px">Nickname</label>
+      <input id="joinNick" maxlength="14" autocomplete="off" placeholder="Your name">
+      <p class="hint" style="margin-top:8px">2-14 characters. Keep it friendly.</p>
+      <div id="joinMsg"></div>
+      <button class="btn big pink" id="btnJoin" style="margin-top:14px">Enter game</button>
+      <button class="btn big ghost" data-go="customize" style="margin-top:10px;color:var(--ink);border-color:#E3DDF7;background:#F4F1FF">🎨 Change my MOKI first</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CUSTOMIZE ================= -->
+<section id="s-customize" class="screen">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="btn ghost sm" id="custBack">← Back</button>
+      <div class="mini">MY MOKI</div>
+      <button class="btn ghost sm" id="btnRandom">🎲 Surprise me</button>
+    </div>
+    <div class="cust">
+      <div class="stage">
+        <div id="custPreview" class="moki-xl"></div>
+        <input id="custName" maxlength="14" placeholder="Your name" style="text-align:center">
+        <div class="row" style="width:100%">
+          <button class="btn sm mint grow" data-mood="correct">😄 Happy</button>
+          <button class="btn sm pink grow" data-mood="wrong">😵 Oops</button>
+          <button class="btn sm gold grow" data-mood="win">🏆 Win</button>
+        </div>
+        <div style="width:100%;color:#fff;font-weight:800;font-size:14px">Level <span id="custLevel">1</span></div>
+        <div class="xpbar" style="width:100%"><i id="custXp" style="width:0%"></i></div>
+      </div>
+      <div>
+        <div class="parts" id="partTabs"></div>
+        <div class="opts" id="partOpts"></div>
+      </div>
+    </div>
+    <div style="height:30px"></div>
+  </div>
+</section>
+
+<!-- ================= PROFILE ================= -->
+<section id="s-profile" class="screen">
+  <div class="wrap">
+    <div class="topbar"><button class="btn ghost sm" data-go="home">← Home</button><div class="mini">PROFILE</div><span></span></div>
+    <div class="card glass">
+      <div class="row" style="align-items:center">
+        <div id="profMoki" class="moki-lg"></div>
+        <div class="grow">
+          <h2 class="t" id="profName" style="font-size:32px">Player</h2>
+          <div class="row">
+            <span style="font-weight:900;font-size:20px">Level <span id="profLevel">1</span></span>
+            <span class="hint" style="color:#D9CEFF" id="profXpText">0 XP</span>
+          </div>
+          <div class="xpbar" style="margin-top:8px"><i id="profXp" style="width:0%"></i></div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <div class="stat"><b id="stGames">0</b><span>GAMES</span></div>
+        <div class="stat"><b id="stWins">0</b><span>WINS</span></div>
+        <div class="stat"><b id="stCorrect">0</b><span>CORRECT</span></div>
+        <div class="stat"><b id="stAcc">0%</b><span>ACCURACY</span></div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn gold" data-go="customize">🎨 Customize MOKI</button>
+        <button class="btn ghost" id="btnReset">Reset profile</button>
+      </div>
+    </div>
+    <h2 class="t" style="margin-top:22px;font-size:26px">Cosmetics</h2>
+    <p class="s">Cosmetics are purely visual - they never change your score.</p>
+    <div id="unlockList" class="stack"></div>
+    <div style="height:30px"></div>
+  </div>
+</section>
+
+<!-- ================= HOST LOBBY ================= -->
+<section id="s-hostlobby" class="screen">
+  <div class="wrap">
+    <div class="topbar"><button class="btn ghost sm" id="hostQuit">✕ End</button><div class="mini" id="hostTitle">MOKI</div><span></span></div>
+    <div class="card glass center">
+      <p class="s" style="margin:0">Join at <b id="hostUrl"></b> with PIN</p>
+      <div class="pin-big" id="hostPin">000000</div>
+      <div class="row" style="justify-content:center;margin-top:12px">
+        <span class="stat" style="max-width:150px"><b id="hostCount">0</b><span>PLAYERS</span></span>
+        <span class="stat" style="max-width:150px"><b id="hostQCount">0</b><span>QUESTIONS</span></span>
+      </div>
+      <button class="btn big gold" id="btnStartGame" style="margin-top:14px">Start MOKI!</button>
+    </div>
+    <div class="player-grid" id="hostPlayers"></div>
+  </div>
+</section>
+
+<!-- ================= PLAYER LOBBY ================= -->
+<section id="s-playerlobby" class="screen">
+  <div class="wrap-sm center">
+    <div class="topbar"><button class="btn ghost sm" id="playerQuit">✕ Leave</button><div class="mini">LOBBY</div><span></span></div>
+    <div class="card glass">
+      <div id="lobbyMoki" class="moki-xl"></div>
+      <h2 class="t" id="lobbyNick" style="font-size:30px">You</h2>
+      <p class="s" id="lobbyTitle">Waiting for the host…</p>
+      <p class="awaiting dots" style="font-size:20px">Hold tight</p>
+    </div>
+    <div class="player-grid" id="lobbyPlayers"></div>
+  </div>
+</section>
+
+<!-- ================= COUNTDOWN ================= -->
+<section id="s-count" class="screen">
+  <div class="wrap center" style="padding-top:16vh">
+    <div id="countMoki" class="moki-xl"></div>
+    <div id="countNum" style="font-size:120px;font-weight:900;color:#fff;text-shadow:0 8px 0 rgba(0,0,0,.25)">3</div>
+    <h2 class="t">Get ready!</h2>
+  </div>
+</section>
+
+<!-- ================= QUESTION ================= -->
+<section id="s-question" class="screen">
+  <div class="wrap">
+    <div class="qtop">
+      <div class="qnum" id="qNum">Q1 / 5</div>
+      <div class="timer" id="qTimer">20</div>
+      <div class="qnum" id="qScore">0 pts</div>
+    </div>
+    <img id="qImage" class="qimg" alt="" hidden>
+    <div class="qtext" id="qText">Question</div>
+    <div class="answers" id="qAnswers"></div>
+    <div id="qStatus" class="awaiting" hidden></div>
+    <div class="row" id="hostQControls" style="justify-content:center;margin-top:14px" hidden>
+      <button class="btn ghost sm" id="btnSkip">Skip to answer →</button>
+      <span class="stat" style="max-width:190px"><b id="qResponses">0</b><span>ANSWERS IN</span></span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= REVEAL ================= -->
+<section id="s-reveal" class="screen">
+  <div class="wrap">
+    <div id="revealPlayer" hidden>
+      <div class="verdict" id="verdict">
+        <div id="revealMoki" class="moki-lg"></div>
+        <h2 id="verdictText">Correct!</h2>
+        <div class="pts" id="verdictPts">+0</div>
+        <p style="margin:8px 0 0;font-weight:800" id="verdictRank">Rank 1 · 0 pts</p>
+      </div>
+    </div>
+    <div id="revealHost" hidden>
+      <h2 class="t center" id="revealCorrect">Correct answer</h2>
+      <div class="answers" id="revealBars" style="margin-top:12px"></div>
+    </div>
+    <h2 class="t" style="margin-top:20px;font-size:26px">Leaderboard</h2>
+    <div class="lb" id="revealLb"></div>
+    <div class="row" style="justify-content:center;margin-top:16px">
+      <button class="btn gold" id="btnNextQ" hidden>Next question →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FINAL ================= -->
+<section id="s-final" class="screen">
+  <div class="wrap center">
+    <h2 class="t" id="finalTitle">Final results</h2>
+    <div class="podium" id="podium"></div>
+    <div id="finalYou" class="card glass" style="margin:18px auto;max-width:520px" hidden>
+      <div class="row" style="justify-content:center">
+        <div class="stat"><b id="fRank">-</b><span>RANK</span></div>
+        <div class="stat"><b id="fScore">0</b><span>SCORE</span></div>
+        <div class="stat"><b id="fAcc">0%</b><span>ACCURACY</span></div>
+        <div class="stat"><b id="fXp">+0</b><span>XP EARNED</span></div>
+      </div>
+      <div style="margin-top:12px;color:#fff;font-weight:800" id="fLevelText">Level 1</div>
+      <div class="xpbar" style="margin-top:6px"><i id="fXpBar" style="width:0%"></i></div>
+    </div>
+    <h2 class="t" style="font-size:24px;margin-top:16px">Full rankings</h2>
+    <div class="lb" id="finalLb" style="max-width:620px;margin:0 auto"></div>
+    <div class="row" style="justify-content:center;margin:22px 0 40px">
+      <button class="btn gold" id="btnAgain">Play again</button>
+      <button class="btn ghost" data-go="home">Return home</button>
+    </div>
+  </div>
+</section>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/moki-catalog.js"></script>
+<script src="js/moki-render.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
