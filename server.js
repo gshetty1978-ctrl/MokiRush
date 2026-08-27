@@ -37,6 +37,12 @@ const LIMITS = {
   maxQuestions: 60, maxPlayers: 200, image: 600,
   minTime: 5, maxTime: 120
 };
+const TEAMS = [
+  { id: 'red',   name: 'Red Rockets',  c: '#FF5A7A' },
+  { id: 'blue',  name: 'Blue Comets',  c: '#3EC8FF' },
+  { id: 'green', name: 'Green Sprouts', c: '#25E0B0' },
+  { id: 'gold',  name: 'Gold Stars',   c: '#FFC93C' }
+];
 const BASE_POINTS = 1000;
 const STREAK_BONUS = 50;
 const REVEAL_MS = 4500;
@@ -115,9 +121,10 @@ function validateMoki(raw) {
 const games = new Map();
 const socketIndex = new Map();
 
-function makeGame(pin, hostSocketId, quiz) {
+function makeGame(pin, hostSocketId, quiz, teams) {
   return {
     pin, hostSocketId, hostConnected: true, quiz,
+    teams: !!teams,
     players: new Map(),
     state: 'lobby',
     qIndex: -1, askedAt: 0, deadline: 0,
@@ -127,16 +134,46 @@ function makeGame(pin, hostSocketId, quiz) {
   };
 }
 
+/* Puts a joining player on the smallest team so sides stay even. */
+function assignTeam(game) {
+  const counts = {};
+  TEAMS.forEach(t => { counts[t.id] = 0; });
+  game.players.forEach(p => { if (p.team) counts[p.team] += 1; });
+  let best = TEAMS[0].id;
+  TEAMS.forEach(t => { if (counts[t.id] < counts[best]) best = t.id; });
+  return best;
+}
+
+/* Team scores are just the sum of their members - individual scoring is
+   untouched, so nothing about the anti-cheat model changes. */
+function teamBoard(game) {
+  if (!game.teams) return null;
+  const totals = {};
+  TEAMS.forEach(t => { totals[t.id] = { id: t.id, name: t.name, c: t.c, score: 0, members: 0, correct: 0 }; });
+  game.players.forEach(p => {
+    const row = totals[p.team];
+    if (!row) return;
+    row.score += p.score;
+    row.correct += p.correct;
+    row.members += 1;
+  });
+  return Object.keys(totals)
+    .map(k => totals[k])
+    .filter(t => t.members > 0)
+    .sort((a, b) => b.score - a.score)
+    .map((t, i) => Object.assign({ rank: i + 1 }, t));
+}
+
 function publicPlayers(game) {
   return [...game.players.values()]
-    .map(p => ({ id: p.id, nick: p.nick, moki: p.moki, score: p.score, connected: p.connected }));
+    .map(p => ({ id: p.id, nick: p.nick, moki: p.moki, score: p.score, connected: p.connected, team: p.team }));
 }
 
 function leaderboard(game) {
   return [...game.players.values()]
     .sort((a, b) => b.score - a.score || a.nick.localeCompare(b.nick))
     .map((p, i) => ({
-      rank: i + 1, id: p.id, nick: p.nick, moki: p.moki,
+      rank: i + 1, id: p.id, nick: p.nick, moki: p.moki, team: p.team,
       score: p.score, streak: p.streak, correct: p.correct
     }));
 }
@@ -147,7 +184,9 @@ function sendLobby(game) {
     count: game.players.size,
     title: game.quiz.title,
     topic: game.quiz.topic,
-    questionCount: game.quiz.questions.length
+    questionCount: game.quiz.questions.length,
+    teams: game.teams ? TEAMS : null,
+    teamBoard: teamBoard(game)
   });
 }
 
@@ -234,6 +273,7 @@ function revealAnswer(game) {
     answers: q.answers,
     counts,
     leaderboard: board.slice(0, 8),
+    teamBoard: teamBoard(game),
     gotIt,
     responses: game.answers.size,
     players: game.players.size,
@@ -259,6 +299,7 @@ function revealAnswer(game) {
         streak: p.streak
       },
       leaderboard: board.slice(0, 5),
+      teamBoard: teamBoard(game),
       gotIt,
       isLast
     });
@@ -305,9 +346,12 @@ function finishGame(game) {
     });
   });
 
+  const finalTeams = teamBoard(game);
+
   io.to('h:' + game.pin).emit('game:over', {
     title: game.quiz.title,
     leaderboard: withXp,
+    teamBoard: finalTeams,
     totalQuestions: total
   });
 
@@ -317,6 +361,7 @@ function finishGame(game) {
       io.to(p.socketId).emit('game:over', {
         title: game.quiz.title,
         leaderboard: withXp.slice(0, 10),
+        teamBoard: finalTeams,
         totalQuestions: total,
         you: row
       });
@@ -359,12 +404,12 @@ io.on('connection', socket => {
     if (games.size > 500) return cb({ ok: false, error: 'Server is at capacity, try again shortly.' });
 
     const pin = newPin();
-    const game = makeGame(pin, socket.id, res.quiz);
+    const game = makeGame(pin, socket.id, res.quiz, !!(payload && payload.teams));
     games.set(pin, game);
     socket.join('g:' + pin);
     socket.join('h:' + pin);
     socketIndex.set(socket.id, { pin, role: 'host' });
-    cb({ ok: true, pin, quiz: res.quiz });
+    cb({ ok: true, pin, quiz: res.quiz, teams: game.teams });
     sendLobby(game);
   });
 
@@ -416,7 +461,8 @@ io.on('connection', socket => {
       cb({
         ok: true, pin, playerId: existing.id, token: existing.token, nick: existing.nick,
         title: game.quiz.title, topic: game.quiz.topic, state: game.state,
-        resumed: true, score: existing.score
+        resumed: true, score: existing.score,
+        teams: game.teams ? TEAMS : null, team: existing.team
       });
       sendLobby(game);
       resendCurrent(game, existing);
@@ -432,6 +478,7 @@ io.on('connection', socket => {
     const id = 'p' + Math.random().toString(36).slice(2, 10);
     const player = {
       id,
+      team: game.teams ? assignTeam(game) : null,
       token: Math.random().toString(36).slice(2) + Date.now().toString(36),
       nick, moki, score: 0, streak: 0, bestStreak: 0, correct: 0, answered: 0,
       connected: true, socketId: socket.id
@@ -442,10 +489,27 @@ io.on('connection', socket => {
 
     cb({
       ok: true, pin, playerId: id, token: player.token, nick,
-      title: game.quiz.title, topic: game.quiz.topic, state: game.state, score: 0
+      title: game.quiz.title, topic: game.quiz.topic, state: game.state, score: 0,
+      teams: game.teams ? TEAMS : null, team: player.team
     });
     sendLobby(game);
     io.to('h:' + pin).emit('player:entered', { nick, moki });
+  });
+
+  socket.on('player:team', (payload, ack) => {
+    const cb = typeof ack === 'function' ? ack : () => {};
+    const ref = socketIndex.get(socket.id);
+    if (!ref || ref.role !== 'player') return cb({ ok: false });
+    const game = games.get(ref.pin);
+    if (!game || !game.teams) return cb({ ok: false, error: 'This game is not in team mode.' });
+    if (game.state !== 'lobby') return cb({ ok: false, error: 'Teams are locked once the game starts.' });
+    const p = game.players.get(ref.playerId);
+    if (!p) return cb({ ok: false });
+    const wanted = clean(payload && payload.team, 10);
+    if (!TEAMS.some(t => t.id === wanted)) return cb({ ok: false, error: 'Unknown team.' });
+    p.team = wanted;
+    cb({ ok: true, team: p.team });
+    sendLobby(game);
   });
 
   socket.on('player:moki', payload => {

@@ -83,6 +83,11 @@
       <div class="seg" id="quickTime"></div>
 
       <div id="quickMsg"></div>
+      <label style="color:#fff;margin-top:18px">4 · Mode</label>
+      <div class="seg" id="quickMode">
+        <button type="button" class="on" data-teams="0">👤 Everyone solo</button>
+        <button type="button" data-teams="1">🤝 Teams</button>
+      </div>
       <button class="btn-hero" id="btnQuickGo" style="margin-top:18px;width:100%">START HOSTING →</button>
     </div>
     <div style="height:30px"></div>
@@ -287,6 +292,7 @@
       </div>
       <button class="btn big gold" id="btnStartGame" style="margin-top:14px">Start MOKI!</button>
     </div>
+    <div id="hostTeams" class="team-strip" hidden></div>
     <div class="player-grid" id="hostPlayers"></div>
   </div>
 </section>
@@ -299,6 +305,7 @@
       <div id="lobbyMoki" class="moki-xl"></div>
       <h2 class="t" id="lobbyNick" style="font-size:30px">You</h2>
       <p class="s" id="lobbyTitle">Waiting for the host…</p>
+      <div id="teamPick" hidden></div>
       <p class="awaiting dots" style="font-size:20px">Hold tight</p>
     </div>
     <div class="player-grid" id="lobbyPlayers"></div>
@@ -332,6 +339,7 @@
 
     <img id="qImage" class="qimg" alt="" hidden>
     <div class="qtext drama" id="qText">Question</div>
+    <button class="btn ghost sm phone-only" id="btnShowText" hidden>Show question text</button>
     <div class="answers huge" id="qAnswers"></div>
 
     <div id="qStatus" class="awaiting" hidden></div>
@@ -360,6 +368,7 @@
       <h2 class="t center" id="revealCorrect">Correct answer</h2>
       <div class="answers" id="revealBars" style="margin-top:12px"></div>
     </div>
+    <div id="teamStandings" class="team-strip" hidden></div>
     <h2 class="t" style="margin-top:20px;font-size:26px">Leaderboard</h2>
     <div class="lb" id="revealLb"></div>
     <div class="row" style="justify-content:center;margin-top:16px">
@@ -372,6 +381,7 @@
 <section id="s-final" class="screen">
   <div class="wrap center">
     <h2 class="t" id="finalTitle">Final results</h2>
+    <div id="teamFinal" class="team-strip" hidden></div>
     <div class="podium" id="podium"></div>
     <div class="levelup" id="levelUp" hidden>LEVEL UP! 🎉</div>
     <div id="finalYou" class="card glass" style="margin:18px auto;max-width:520px" hidden>

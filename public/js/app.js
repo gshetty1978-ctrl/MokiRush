@@ -53,13 +53,63 @@
       o.start(); o.stop(actx.currentTime + (dur || 0.15));
     } catch (e) {}
   }
+  /* A tiny synthesized music bed - no audio files, still works offline. */
+  var music = { nodes: null, timer: null };
+  function stopMusic() {
+    if (music.timer) { clearInterval(music.timer); music.timer = null; }
+    if (music.nodes) {
+      try { music.nodes.gain.gain.setTargetAtTime(0, actx.currentTime, 0.1); } catch (e) {}
+      setTimeout(function (n) { try { n.osc.stop(); } catch (e) {} }, 400, music.nodes);
+      music.nodes = null;
+    }
+  }
+  function startMusic(kind) {
+    if (!profile.sound) return;
+    stopMusic();
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+      var gain = actx.createGain();
+      gain.gain.value = 0.0001;
+      gain.connect(actx.destination);
+      gain.gain.setTargetAtTime(kind === 'tense' ? 0.05 : 0.035, actx.currentTime, 0.4);
+      var osc = actx.createOscillator();
+      osc.type = kind === 'tense' ? 'sawtooth' : 'triangle';
+      var filter = actx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = kind === 'tense' ? 900 : 600;
+      osc.connect(filter); filter.connect(gain);
+      osc.start();
+      music.nodes = { osc: osc, gain: gain };
+
+      // a simple repeating bass figure
+      var lobby = [130.81, 164.81, 196.00, 164.81];
+      var tense = [110.00, 110.00, 138.59, 146.83];
+      var seq = kind === 'tense' ? tense : lobby;
+      var step = 0;
+      var beat = kind === 'tense' ? 300 : 520;
+      osc.frequency.setValueAtTime(seq[0], actx.currentTime);
+      music.timer = setInterval(function () {
+        step = (step + 1) % seq.length;
+        try { osc.frequency.setTargetAtTime(seq[step], actx.currentTime, 0.03); } catch (e) {}
+      }, beat);
+    } catch (e) {}
+  }
+
   var SFX = {
     tap: function () { beep(520, 0.08, 'square', 0.05); },
     tick: function () { beep(880, 0.06, 'sine', 0.04); },
     good: function () { beep(660, 0.12); setTimeout(function () { beep(990, 0.18); }, 110); },
     bad: function () { beep(200, 0.22, 'sawtooth', 0.06); },
     win: function () { [523, 659, 784, 1046].forEach(function (f, i) { setTimeout(function () { beep(f, 0.22); }, i * 130); }); },
-    join: function () { beep(700, 0.1); }
+    join: function () { beep(700, 0.1); },
+    lock: function () { beep(440, 0.09, 'square', 0.05); setTimeout(function () { beep(660, 0.1, 'square', 0.05); }, 70); },
+    reveal: function () { beep(330, 0.16, 'triangle', 0.07); },
+    levelup: function () {
+      [523, 659, 784, 1046, 1318].forEach(function (f, i) {
+        setTimeout(function () { beep(f, 0.26, 'triangle', 0.1); }, i * 120);
+      });
+    }
   };
 
   /* ---------------- screens ---------------- */
@@ -99,7 +149,21 @@
     if (name === 'profile') paintProfile();
     if (name === 'customize') paintCustomizer();
     if (name === 'create') { paintTopics(); renderQList(); }
-    if (name === 'quick') buildSetup('quick');
+    if (name === 'quick') {
+      buildSetup('quick');
+      var modes = $('quickMode');
+      if (modes && !modes.dataset.wired) {
+        modes.dataset.wired = '1';
+        modes.querySelectorAll('button').forEach(function (b) {
+          b.onclick = function () {
+            teamState.wanted = b.getAttribute('data-teams') === '1';
+            modes.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
+            b.classList.add('on');
+            SFX.tap();
+          };
+        });
+      }
+    }
     if (name === 'solosetup') buildSetup('solo');
   }
   document.addEventListener('click', function (e) {
@@ -147,7 +211,8 @@
     $('btnSound').textContent = profile.sound ? '🔊 Sound: on' : '🔇 Sound: off';
   }
   $('btnSound').onclick = function () {
-    profile.sound = !profile.sound; save(); paintHome(); if (profile.sound) SFX.tap();
+    profile.sound = !profile.sound; save(); paintHome();
+    if (profile.sound) SFX.tap(); else stopMusic();
   };
 
   /* ---------------- profile ---------------- */
@@ -337,6 +402,11 @@
     };
     head.appendChild(mk('↑', 'Move up', function () { move(i, -1); }));
     head.appendChild(mk('↓', 'Move down', function () { move(i, 1); }));
+    head.appendChild(mk('⧉', 'Duplicate question', function () {
+      var copy = JSON.parse(JSON.stringify(q));
+      quiz.questions.splice(i + 1, 0, copy);
+      saveQuiz(); renderQList();
+    }));
     head.appendChild(mk('🗑', 'Delete question', function () {
       quiz.questions.splice(i, 1); saveQuiz(); renderQList();
     }));
@@ -597,6 +667,49 @@
       }).catch(function () { msgBox(kind + 'Msg', 'Could not reach the server.'); });
   }
 
+  /* ---------------- teams ---------------- */
+  var teamState = { list: null, mine: null, wanted: false };
+
+  function teamCards(host, board, hidden) {
+    if (!host) return;
+    if (!board || !board.length) { host.hidden = true; return; }
+    host.hidden = false;
+    host.innerHTML = '';
+    board.forEach(function (t) {
+      var d = document.createElement('div');
+      d.className = 'team-card' + (t.rank === 1 ? ' lead' : '');
+      d.style.background = t.c;
+      d.innerHTML = '<b>' + esc(t.name) + '</b><span class="sc">' + t.score +
+        '</span><span class="mb">' + t.members + ' player' + (t.members === 1 ? '' : 's') + '</span>';
+      host.appendChild(d);
+    });
+  }
+
+  function paintTeamPicker(list, mine) {
+    var host = $('teamPick');
+    if (!host) return;
+    if (!list) { host.hidden = true; return; }
+    host.hidden = false;
+    host.innerHTML = '<label style="color:#fff">Your team</label>';
+    var grid = document.createElement('div');
+    grid.className = 'team-pick';
+    list.forEach(function (t) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'team-btn' + (t.id === mine ? ' on' : '');
+      b.style.background = t.c;
+      b.textContent = t.name;
+      b.onclick = function () {
+        socket.emit('player:team', { team: t.id }, function (res) {
+          if (res && res.ok) { teamState.mine = res.team; paintTeamPicker(list, res.team); SFX.tap(); }
+          else if (res && res.error) toast(res.error);
+        });
+      };
+      grid.appendChild(b);
+    });
+    host.appendChild(grid);
+  }
+
   /* ---------------- game feel helpers ---------------- */
   function popPoints(text, cls) {
     var d = document.createElement('div');
@@ -629,12 +742,23 @@
     el.innerHTML = MOKI.svg(profile.moki, { mood: mood || 'idle' });
   }
 
+  /* Phones get shapes rather than a wall of text - the question is on the host
+     screen. The text is still in aria-label, so screen readers get everything. */
+  function phoneMode() {
+    return me.role === 'player' && window.matchMedia('(max-width: 820px)').matches;
+  }
+  function applyPhoneMode() {
+    document.body.classList.toggle('phone-play', phoneMode());
+  }
+
   /* ---------------- game state ---------------- */
   var me = { role: null, pin: null, playerId: null, token: null, score: 0, answered: false };
   var timerHandle = null;
   var lastQuestion = null;
 
   function leaveGame() {
+    stopMusic();
+    document.body.classList.remove('phone-play');
     if (me.role === 'host') socket.emit('host:end');
     else if (me.role === 'solo') socket.emit('solo:quit');
     me = { role: null, pin: null, playerId: null, token: null, score: 0, answered: false };
@@ -652,7 +776,7 @@
     });
     if (bad >= 0) { msgBox('createMsg', 'Question ' + (bad + 1) + ' is missing text or an answer.'); return; }
 
-    socket.emit('host:create', { quiz: quiz }, function (res) {
+    socket.emit('host:create', { quiz: quiz, teams: teamState.wanted }, function (res) {
       if (!res || !res.ok) { msgBox('createMsg', (res && res.error) || 'Could not create the game.'); return; }
       me.role = 'host';
       me.pin = res.pin;
@@ -716,7 +840,10 @@
       $('lobbyNick').textContent = nick;
       $('lobbyTitle').textContent = res.title + ' · ' + res.topic;
       mokiInto($('lobbyMoki'), profile.moki, 'idle');
-      if (res.state === 'lobby') show('playerlobby');
+      teamState.list = res.teams || null;
+      teamState.mine = res.team || null;
+      paintTeamPicker(teamState.list, teamState.mine);
+      if (res.state === 'lobby') { show('playerlobby'); startMusic('lobby'); }
       SFX.join();
     });
   };
@@ -731,7 +858,7 @@
       $('qzTitle').value = q.title;
       $('qzTopic').value = q.topic;
       saveQuiz();
-      socket.emit('host:create', { quiz: q }, function (res) {
+      socket.emit('host:create', { quiz: q, teams: teamState.wanted }, function (res) {
         btn.disabled = false;
         if (!res || !res.ok) { msgBox('quickMsg', (res && res.error) || 'Could not create the game.'); return; }
         me.role = 'host';
@@ -788,6 +915,8 @@
 
   /* ---------------- socket events ---------------- */
   socket.on('lobby:update', function (d) {
+    if (d.teams) teamState.list = d.teams;
+    teamCards($('hostTeams'), d.teamBoard);
     if (me.role === 'host') {
       $('hostCount').textContent = d.count;
       $('hostQCount').textContent = d.questionCount;
@@ -854,7 +983,7 @@
     q.answers.forEach(function (a, i) {
       var b = document.createElement('button');
       b.className = 'ans ans' + i;
-      b.innerHTML = '<span class="shape">' + SHAPES[i] + '</span><span>' + esc(a) + '</span>';
+      b.innerHTML = '<span class="shape">' + SHAPES[i] + '</span><span class="label">' + esc(a) + '</span>';
       b.setAttribute('aria-label', 'Answer ' + (i + 1) + ': ' + a);
       if (me.role !== 'host') {          // players and solo runs both answer
         b.onclick = function () { answer(i); };
@@ -869,8 +998,21 @@
     $('qResponses').textContent = '0';
     if (me.answered) lockAnswers(null);
 
+    applyPhoneMode();
+    $('qText').classList.remove('reveal-text');
+    var showText = $('btnShowText');
+    if (showText) {
+      showText.hidden = !phoneMode();
+      showText.onclick = function () {
+        $('qText').classList.toggle('reveal-text');
+        showText.textContent = $('qText').classList.contains('reveal-text')
+          ? 'Hide question text' : 'Show question text';
+      };
+      showText.textContent = 'Show question text';
+    }
     show('question');
     startTimer(q);
+    startMusic('tense');
   });
 
   var RING_LEN = 276.46;   // 2 * PI * r, r = 44
@@ -909,7 +1051,7 @@
     if (me.answered) return;
     me.answered = true;
     lockAnswers(i);
-    SFX.tap();
+    SFX.lock();
     socket.emit('player:answer', { choice: i }, function (res) {
       if (!res || !res.ok) {
         me.answered = false;
@@ -954,6 +1096,9 @@
 
   socket.on('game:reveal', function (d) {
     stopTimer();
+    stopMusic();
+    SFX.reveal();
+    teamCards($('teamStandings'), d.teamBoard);
     var isHost = me.role === 'host';
     $('revealPlayer').hidden = isHost;
     $('revealHost').hidden = !isHost;
@@ -1031,6 +1176,8 @@
 
   socket.on('game:over', function (d) {
     stopTimer();
+    stopMusic();
+    teamCards($('teamFinal'), d.teamBoard);
     $('finalTitle').textContent = d.title;
 
     var top = d.leaderboard.slice(0, 3);
@@ -1097,7 +1244,7 @@
         if (levelAfter > levelBefore) {
           lvlBanner.textContent = 'LEVEL UP!  ' + levelBefore + ' → ' + levelAfter + '  🎉';
           lvlBanner.hidden = false;
-          setTimeout(function () { SFX.win(); }, 700);
+          setTimeout(function () { SFX.levelup(); }, 700);
         } else {
           lvlBanner.hidden = true;
         }
