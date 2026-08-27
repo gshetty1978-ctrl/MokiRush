@@ -63,18 +63,44 @@
   };
 
   /* ---------------- screens ---------------- */
+  var SCREEN_TITLES = {
+    home: 'MOKI - Live Multiplayer Quiz Party',
+    quick: 'Quick Play - MOKI',
+    solosetup: 'Play Alone - MOKI',
+    create: 'Quiz Builder - MOKI',
+    join: 'Join a Game - MOKI',
+    customize: 'My MOKI - MOKI',
+    profile: 'Profile - MOKI',
+    hostlobby: 'Host Lobby - MOKI',
+    playerlobby: 'Lobby - MOKI',
+    question: 'Question - MOKI',
+    reveal: 'Results - MOKI',
+    final: 'Final Results - MOKI'
+  };
   var current = 'home';
   function show(name) {
     var el = $('s-' + name);
     if (!el) return;
-    document.querySelectorAll('.screen').forEach(function (s) { s.classList.remove('active'); });
+    // only the live screen is exposed to screen readers / tab order
+    document.querySelectorAll('.screen').forEach(function (sc) {
+      sc.classList.remove('active');
+      sc.setAttribute('aria-hidden', 'true');
+      sc.hidden = true;
+      if ('inert' in sc) sc.inert = true;
+    });
     el.classList.add('active');
+    el.removeAttribute('aria-hidden');
+    el.hidden = false;
+    if ('inert' in el) el.inert = false;
+    document.title = SCREEN_TITLES[name] || 'MOKI - Live Multiplayer Quiz Party';
     current = name;
     window.scrollTo(0, 0);
     if (name === 'home') paintHome();
     if (name === 'profile') paintProfile();
     if (name === 'customize') paintCustomizer();
     if (name === 'create') { paintTopics(); renderQList(); }
+    if (name === 'quick') buildSetup('quick');
+    if (name === 'solosetup') buildSetup('solo');
   }
   document.addEventListener('click', function (e) {
     var t = e.target.closest('[data-go]');
@@ -107,8 +133,14 @@
   }
 
   /* ---------------- home ---------------- */
+  var GREETINGS = [
+    "Hi, I'm your MOKI!", 'Ready to play?', 'Quiz me on anything!',
+    'Who is fastest today?', 'Make me a hat!', "Let's gooo!"
+  ];
   function paintHome() {
-    mokiInto($('homeMoki'), profile.moki, 'idle');
+    mokiInto($('homeMoki'), profile.moki, 'wave');
+    var sp = $('heroSpeech');
+    if (sp) sp.textContent = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
     $('homeName').textContent = profile.name || 'New player';
     $('homeLevel').textContent = levelOf(profile.xp);
     $('homeXp').style.width = levelProgress(profile.xp) + '%';
@@ -163,7 +195,8 @@
   function partLabel(p) {
     return ({
       skin: 'Skin', hair: 'Hair style', hairColor: 'Hair colour', eyes: 'Eyes', mouth: 'Mouth',
-      outfit: 'Outfit', pants: 'Pants', shoes: 'Shoes', hat: 'Hats', accessory: 'Accessories'
+      outfit: 'Outfit', pants: 'Pants', shoes: 'Shoes', hat: 'Hats', accessory: 'Accessories',
+      aura: 'Aura ✨'
     })[p] || p;
   }
   function esc(s) {
@@ -460,15 +493,150 @@
       }).catch(function () { msgBox('createMsg', 'Could not reach the server.'); });
   };
 
+  /* ---------------- quick play & solo setup ---------------- */
+  var TOPIC_TILES = [
+    { id: 'general',    name: 'General', emoji: '🧠' },
+    { id: 'science',    name: 'Science', emoji: '🔬' },
+    { id: 'space',      name: 'Space',   emoji: '🚀' },
+    { id: 'movies',     name: 'Movies',  emoji: '🎬' },
+    { id: 'gaming',     name: 'Games',   emoji: '🎮' },
+    { id: 'sports',     name: 'Sports',  emoji: '⚽' },
+    { id: 'animals',    name: 'Animals', emoji: '🐾' },
+    { id: 'history',    name: 'History', emoji: '🏺' },
+    { id: 'geography',  name: 'World',   emoji: '🌍' },
+    { id: 'music',      name: 'Music',   emoji: '🎵' },
+    { id: '__random',   name: 'Random',  emoji: '🎲' },
+    { id: '__custom',   name: 'Custom',  emoji: '✏️' }
+  ];
+  var setup = {
+    quick: { topic: 'general', count: 8, time: 20 },
+    solo:  { topic: 'general', count: 8, time: 20 }
+  };
+
+  function buildSetup(kind) {
+    var cfg = setup[kind];
+    var tiles = $(kind + 'Topics');
+    if (!tiles || tiles.childElementCount) return;
+
+    TOPIC_TILES.forEach(function (t) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'topic' + (cfg.topic === t.id ? ' on' : '');
+      b.innerHTML = '<span class="emoji">' + t.emoji + '</span>' + esc(t.name);
+      b.onclick = function () {
+        cfg.topic = t.id;
+        SFX.tap();
+        tiles.querySelectorAll('.topic').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        $(kind + 'CustomWrap').hidden = t.id !== '__custom';
+        if (t.id === '__custom') $(kind + 'Custom').focus();
+      };
+      tiles.appendChild(b);
+    });
+
+    seg(kind + 'Count', [5, 8, 10], cfg, 'count', function (v) { return v + ' Qs'; });
+    seg(kind + 'Time', [10, 15, 20, 30], cfg, 'time', function (v) { return v + 's'; });
+  }
+
+  function seg(hostId, values, cfg, key, label) {
+    var host = $(hostId);
+    if (!host) return;
+    host.innerHTML = '';
+    values.forEach(function (v) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = cfg[key] === v ? 'on' : '';
+      b.textContent = label(v);
+      b.onclick = function () {
+        cfg[key] = v;
+        SFX.tap();
+        host.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+      };
+      host.appendChild(b);
+    });
+  }
+
+  function resolveTopic(kind) {
+    var cfg = setup[kind];
+    if (cfg.topic === '__custom') return ($(kind + 'Custom').value || '').trim();
+    if (cfg.topic === '__random') {
+      var pool = TOPIC_TILES.filter(function (t) { return t.id.indexOf('__') !== 0; });
+      return pool[Math.floor(Math.random() * pool.length)].id;
+    }
+    return cfg.topic;
+  }
+
+  /* Asks MOKI Spark for a set of questions, then hands back a quiz object. */
+  function makeQuiz(kind, done) {
+    var cfg = setup[kind];
+    var topic = resolveTopic(kind);
+    if (!topic) { msgBox(kind + 'Msg', 'Type a topic first.'); return; }
+    msgBox(kind + 'Msg', 'Building your quiz…', true);
+
+    fetch('/api/spark', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic: topic, count: cfg.count })
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) {
+        if (!res.ok || !res.d.ok) {
+          msgBox(kind + 'Msg', (res.d && res.d.error) ||
+            'MOKI Spark has nothing for that topic yet - try another, or use the Quiz Builder.');
+          return;
+        }
+        var qs = res.d.questions.map(function (q) {
+          return { text: q.text, answers: q.answers, correct: q.correct, time: cfg.time, image: '' };
+        });
+        msgBox(kind + 'Msg', '');
+        done({
+          title: topic.charAt(0).toUpperCase() + topic.slice(1) + ' Showdown',
+          topic: topic,
+          questions: qs
+        });
+      }).catch(function () { msgBox(kind + 'Msg', 'Could not reach the server.'); });
+  }
+
+  /* ---------------- game feel helpers ---------------- */
+  function popPoints(text, cls) {
+    var d = document.createElement('div');
+    d.className = 'pts-pop';
+    d.textContent = text;
+    if (cls) d.style.color = cls;
+    document.body.appendChild(d);
+    setTimeout(function () { d.remove(); }, 1600);
+  }
+
+  function reactionChip(nick, moki, label, good) {
+    var host = $('qReactions');
+    if (!host) return;
+    var d = document.createElement('div');
+    d.className = 'rx' + (good ? ' good' : '');
+    var m = document.createElement('div');
+    m.className = 'moki-wrap';
+    m.innerHTML = MOKI.svg(moki, { mood: good ? 'correct' : 'idle' });
+    var t = document.createElement('span');
+    t.textContent = nick + ' ' + label;
+    d.appendChild(m); d.appendChild(t);
+    host.appendChild(d);
+    while (host.childElementCount > 6) host.removeChild(host.firstChild);
+  }
+
+  /* Big MOKI in the corner of the question screen, reacting to what happens. */
+  function cornerMoki(mood) {
+    var el = $('qMoki');
+    if (!el) return;
+    el.innerHTML = MOKI.svg(profile.moki, { mood: mood || 'idle' });
+  }
+
   /* ---------------- game state ---------------- */
   var me = { role: null, pin: null, playerId: null, token: null, score: 0, answered: false };
   var timerHandle = null;
   var lastQuestion = null;
 
   function leaveGame() {
-    if (me.role) {
-      socket.emit(me.role === 'host' ? 'host:end' : 'disconnectRequest');
-    }
+    if (me.role === 'host') socket.emit('host:end');
+    else if (me.role === 'solo') socket.emit('solo:quit');
     me = { role: null, pin: null, playerId: null, token: null, score: 0, answered: false };
     try { sessionStorage.removeItem('moki.session'); } catch (e) {}
     stopTimer();
@@ -554,6 +722,51 @@
   };
   $('playerQuit').onclick = function () { leaveGame(); show('home'); };
 
+  $('btnQuickGo').onclick = function () {
+    var btn = this;
+    btn.disabled = true;
+    makeQuiz('quick', function (q) {
+      // fill the builder first - saveQuiz() reads its inputs back into the quiz
+      quiz = q;
+      $('qzTitle').value = q.title;
+      $('qzTopic').value = q.topic;
+      saveQuiz();
+      socket.emit('host:create', { quiz: q }, function (res) {
+        btn.disabled = false;
+        if (!res || !res.ok) { msgBox('quickMsg', (res && res.error) || 'Could not create the game.'); return; }
+        me.role = 'host';
+        me.pin = res.pin;
+        $('hostPin').textContent = res.pin;
+        $('hostTitle').textContent = res.quiz.title;
+        $('hostQCount').textContent = res.quiz.questions.length;
+        $('hostUrl').textContent = location.host;
+        show('hostlobby');
+        showJoinQr(res.pin);
+        SFX.join();
+      });
+    });
+    setTimeout(function () { btn.disabled = false; }, 6000);
+  };
+
+  $('btnSoloGo').onclick = function () {
+    var btn = this;
+    btn.disabled = true;
+    makeQuiz('solo', function (q) {
+      socket.emit('solo:start', {
+        quiz: q, nick: profile.name || 'You', moki: profile.moki
+      }, function (res) {
+        btn.disabled = false;
+        if (!res || !res.ok) { msgBox('soloMsg', (res && res.error) || 'Could not start.'); return; }
+        me.role = 'solo';
+        me.pin = res.pin;
+        me.playerId = res.playerId;
+        me.score = 0;
+        SFX.join();
+      });
+    });
+    setTimeout(function () { btn.disabled = false; }, 6000);
+  };
+
   /* try to rejoin after a refresh */
   (function tryResume() {
     var raw;
@@ -629,7 +842,9 @@
     lastQuestion = q;
     me.answered = !!q.alreadyAnswered;
     $('qNum').textContent = 'Q' + (q.index + 1) + ' / ' + q.total;
-    $('qScore').textContent = me.role === 'host' ? 'HOST' : me.score + ' pts';
+    $('qReactions').innerHTML = '';
+    cornerMoki('idle');
+    $('qScore').textContent = me.role === 'host' ? 'HOST SCREEN' : me.score + ' pts';
     $('qText').textContent = q.text;
     var img = $('qImage');
     if (q.image) { img.src = q.image; img.hidden = false; } else { img.hidden = true; img.removeAttribute('src'); }
@@ -641,7 +856,7 @@
       b.className = 'ans ans' + i;
       b.innerHTML = '<span class="shape">' + SHAPES[i] + '</span><span>' + esc(a) + '</span>';
       b.setAttribute('aria-label', 'Answer ' + (i + 1) + ': ' + a);
-      if (me.role === 'player') {
+      if (me.role !== 'host') {          // players and solo runs both answer
         b.onclick = function () { answer(i); };
       } else {
         b.style.cursor = 'default';
@@ -658,23 +873,29 @@
     startTimer(q);
   });
 
+  var RING_LEN = 276.46;   // 2 * PI * r, r = 44
   function startTimer(q) {
     stopTimer();
     var offset = Date.now() - q.serverNow;      // rough clock skew correction
     var end = q.endsAt + offset;
+    var total = q.time * 1000;
     var el = $('qTimer');
+    var ring = $('qRing');
+    var bar = $('qRingBar');
     var lastShown = -1;
     function paint() {
-      var left = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+      var msLeft = Math.max(0, end - Date.now());
+      var left = Math.max(0, Math.ceil(msLeft / 1000));
+      if (bar) bar.style.strokeDashoffset = String(RING_LEN * (1 - msLeft / total));
       if (left !== lastShown) {
         lastShown = left;
         el.textContent = left;
-        el.classList.toggle('warn', left <= 5);
+        if (ring) ring.classList.toggle('warn', left <= 5);
         if (left <= 5 && left > 0) SFX.tick();
       }
       if (left <= 0) {
         stopTimer();
-        if (me.role === 'player' && !me.answered) {
+        if (me.role !== 'host' && !me.answered) {
           $('qStatus').hidden = false;
           $('qStatus').textContent = "Time's up!";
         }
@@ -705,6 +926,7 @@
   function lockAnswers(chosen) {
     $('qAnswers').querySelectorAll('.ans').forEach(function (b, k) {
       b.classList.toggle('dim', chosen !== null && k !== chosen);
+      b.classList.toggle('picked', chosen !== null && k === chosen);
       b.disabled = true;
     });
     $('qStatus').hidden = false;
@@ -714,9 +936,16 @@
 
   // keyboard: 1-4 to answer
   document.addEventListener('keydown', function (e) {
-    if (current !== 'question' || me.role !== 'player') return;
+    if (current !== 'question' || me.role === 'host' || !me.role) return;
     var n = ['1', '2', '3', '4'].indexOf(e.key);
     if (n >= 0) answer(n);
+  });
+
+  socket.on('reaction:locked', function (d) {
+    if (d.id === me.playerId) return;                 // you already know you answered
+    var label = d.order === 1 ? 'answered first! ⚡' : 'locked in 🔒';
+    reactionChip(d.nick, d.moki, label, false);
+    SFX.tick();
   });
 
   socket.on('answer:count', function (d) {
@@ -742,6 +971,11 @@
           '</span><span class="count">' + d.counts[i] + '</span>';
         bars.appendChild(b);
       });
+      var rx = $('qReactions');
+      if (rx) rx.innerHTML = '';
+      (d.gotIt || []).slice(0, 6).forEach(function (g) {
+        reactionChip(g.nick, g.moki, 'got it! 🎉', true);
+      });
     } else {
       var v = $('verdict');
       var you = d.you;
@@ -766,6 +1000,8 @@
         SFX.bad();
       }
       $('verdictRank').textContent = 'Rank ' + you.rank + ' · ' + you.score + ' pts';
+      if (you.wasCorrect && you.points > 0) popPoints('+' + you.points);
+      cornerMoki(you.wasCorrect ? 'correct' : 'wrong');
     }
     paintLb($('revealLb'), d.leaderboard);
     show('reveal');
@@ -800,11 +1036,16 @@
     var top = d.leaderboard.slice(0, 3);
     var pod = $('podium');
     pod.innerHTML = '';
+    var MEDALS = ['🥇', '🥈', '🥉'];
     [1, 0, 2].forEach(function (idx) {
       var r = top[idx];
       if (!r) return;
       var col = document.createElement('div');
       col.className = 'pod pod' + (idx + 1);
+      var medal = document.createElement('div');
+      medal.className = 'medal';
+      medal.textContent = MEDALS[idx];
+      col.appendChild(medal);
       var mk = document.createElement('div');
       mk.className = 'moki-md';
       mk.innerHTML = MOKI.svg(r.moki, { mood: 'win' });
@@ -837,14 +1078,30 @@
       $('fAcc').textContent = d.you.accuracy + '%';
       $('fXp').textContent = '+' + d.you.xp;
 
+      var levelBefore = levelOf(profile.xp);
       profile.xp += d.you.xp;
       profile.games += 1;
       profile.correct += d.you.correct;
       profile.answered += d.you.answered;
       if (d.you.rank === 1) profile.wins += 1;
       save();
-      $('fLevelText').textContent = 'Level ' + levelOf(profile.xp) + ' · ' + profile.xp + ' XP total';
+      var levelAfter = levelOf(profile.xp);
+      $('fLevelText').textContent = 'Level ' + levelAfter + ' · ' + profile.xp + ' XP total';
       setTimeout(function () { $('fXpBar').style.width = levelProgress(profile.xp) + '%'; }, 250);
+
+      // count the XP up rather than just printing it
+      countUp($('fXp'), d.you.xp, '+');
+
+      var lvlBanner = $('levelUp');
+      if (lvlBanner) {
+        if (levelAfter > levelBefore) {
+          lvlBanner.textContent = 'LEVEL UP!  ' + levelBefore + ' → ' + levelAfter + '  🎉';
+          lvlBanner.hidden = false;
+          setTimeout(function () { SFX.win(); }, 700);
+        } else {
+          lvlBanner.hidden = true;
+        }
+      }
     } else {
       $('finalYou').hidden = true;
     }
@@ -868,11 +1125,37 @@
   });
 
   $('btnAgain').onclick = function () {
+    if (me.role === 'solo') { SFX.tap(); show('solosetup'); me.role = null; me.playerId = null; me.score = 0; return; }
     SFX.tap();
     if (me.role === 'host') { show('create'); }
     else { show('join'); $('joinPin').value = ''; $('joinPin').focus(); }
     me.role = null; me.playerId = null; me.score = 0;
   };
+
+  /* Counts a number up so earning XP feels like earning something. */
+  function countUp(el, target, prefix) {
+    if (!el) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      el.textContent = (prefix || '') + target;
+      return;
+    }
+    var start = performance.now(), dur = 900, finished = false;
+    function finish() {
+      if (finished) return;
+      finished = true;
+      el.textContent = (prefix || '') + target;
+    }
+    // requestAnimationFrame is paused while the tab is in the background, so a
+    // timer guarantees the real number lands even if the animation never runs
+    setTimeout(finish, dur + 250);
+    (function step(now) {
+      if (finished) return;
+      var t = Math.min(1, (now - start) / dur);
+      var eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = (prefix || '') + Math.round(target * eased);
+      if (t < 1) requestAnimationFrame(step); else finish();
+    })(start);
+  }
 
   /* ---------------- confetti ---------------- */
   function confetti() {
@@ -913,7 +1196,8 @@
   /* ---------------- boot ---------------- */
   if (!profile.name) profile.moki = MOKI.randomConfig(1);
   save();
-  paintHome();
+  // show() also hides every other screen from screen readers and the tab order
+  show('home');
   var deep = location.hash.match(/^#(\d{6})$/);
   if (deep) { $('joinPin').value = deep[1]; show('join'); }
 })();

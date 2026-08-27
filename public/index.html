@@ -8,6 +8,7 @@
 <meta name="description" content="MOKI is a fast, colourful live multiplayer knowledge game. Make a quiz about anything, share a 6-digit PIN and play together.">
 <link rel="preload" href="fonts/baloo2-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/game.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%235B2BD6'/><circle cx='38' cy='44' r='7' fill='%23fff'/><circle cx='62' cy='44' r='7' fill='%23fff'/><path d='M36 64q14 14 28 0' stroke='%23FFC93C' stroke-width='7' fill='none' stroke-linecap='round'/></svg>">
 </head>
 <body>
@@ -18,22 +19,29 @@
 <!-- ================= HOME ================= -->
 <section id="s-home" class="screen active">
   <div class="wrap">
-    <div style="height:14px"></div>
+    <div style="height:10px"></div>
     <div class="brand"><h1><span>M</span><span>O</span><span>K</span><span>I</span></h1></div>
     <p class="tag">Quiz anything. Play together. Be the fastest MOKI in the room.</p>
 
-    <div class="row" style="justify-content:center;margin-bottom:22px">
-      <div id="homeMoki" style="width:170px"></div>
+    <div class="hero">
+      <div class="hero-actions">
+        <button class="btn-hero" data-go="quick"><span class="ico">🎉</span>CREATE A GAME</button>
+        <button class="btn-hero play" data-go="join"><span class="ico">🎯</span>JOIN A GAME</button>
+        <button class="btn-hero solo" data-go="solosetup"><span class="ico">🕹️</span>PLAY ALONE</button>
+      </div>
+      <div class="hero-moki">
+        <div class="speech" id="heroSpeech">Hi, I'm your MOKI!</div>
+        <div id="homeMoki"></div>
+      </div>
     </div>
 
-    <div class="menu">
-      <button class="menu-item mi-1" data-go="create"><span class="emoji">🎬</span>Create Game</button>
-      <button class="menu-item mi-2" data-go="join"><span class="emoji">🎯</span>Join Game</button>
+    <div class="mini-menu">
       <button class="menu-item mi-3" data-go="customize"><span class="emoji">🎨</span>Customize MOKI</button>
       <button class="menu-item mi-4" data-go="profile"><span class="emoji">🏅</span>Profile</button>
+      <button class="menu-item mi-1" data-go="create"><span class="emoji">✏️</span>Quiz Builder</button>
     </div>
 
-    <div class="card glass" style="margin-top:20px">
+    <div class="card glass" style="margin-top:18px">
       <div class="spread">
         <div><b id="homeName">Player</b> · Level <b id="homeLevel">1</b></div>
         <div class="row"><button class="btn ghost sm" id="btnSound">🔊 Sound: on</button></div>
@@ -43,6 +51,68 @@
     <p class="center" style="color:#CDBEFF;font-size:13px;margin-top:16px">
       Host on a big screen · players join from their phones at this same address.
     </p>
+  </div>
+</section>
+
+<!-- ================= QUICK PLAY ================= -->
+<section id="s-quick" class="screen">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="btn ghost sm" data-go="home">← Home</button>
+      <span class="role-badge host">HOST SCREEN</span>
+      <button class="btn ghost sm" data-go="create">Build my own →</button>
+    </div>
+    <h2 class="t center">Quick Play</h2>
+    <p class="s center">Pick a topic, pick a length, go. You can still edit everything after.</p>
+
+    <div class="card glass">
+      <label style="color:#fff">1 · Topic</label>
+      <div class="topics" id="quickTopics"></div>
+      <div id="quickCustomWrap" style="margin-top:12px" hidden>
+        <input id="quickCustom" maxlength="40" placeholder="Type any topic…">
+      </div>
+
+      <label style="color:#fff;margin-top:18px">2 · How many questions</label>
+      <div class="seg" id="quickCount"></div>
+
+      <label style="color:#fff;margin-top:18px">3 · Seconds per question</label>
+      <div class="seg" id="quickTime"></div>
+
+      <div id="quickMsg"></div>
+      <button class="btn-hero" id="btnQuickGo" style="margin-top:18px;width:100%">START HOSTING →</button>
+    </div>
+    <div style="height:30px"></div>
+  </div>
+</section>
+
+<!-- ================= SOLO SETUP ================= -->
+<section id="s-solosetup" class="screen">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="btn ghost sm" data-go="home">← Home</button>
+      <span class="role-badge solo">SOLO</span>
+      <span></span>
+    </div>
+    <h2 class="t center">Play Alone</h2>
+    <p class="s center">Just you and the clock. Every answer still earns XP.</p>
+
+    <div class="card glass">
+      <label style="color:#fff">1 · Topic</label>
+      <div class="topics" id="soloTopics"></div>
+      <div id="soloCustomWrap" style="margin-top:12px" hidden>
+        <input id="soloCustom" maxlength="40" placeholder="Type any topic…">
+      </div>
+
+      <label style="color:#fff;margin-top:18px">2 · How many questions</label>
+      <div class="seg" id="soloCount"></div>
+
+      <label style="color:#fff;margin-top:18px">3 · Seconds per question</label>
+      <div class="seg" id="soloTime"></div>
+
+      <div id="soloMsg"></div>
+      <button class="btn-hero solo" id="btnSoloGo" style="margin-top:18px;width:100%">START RUN →</button>
+    </div>
+    <div style="height:30px"></div>
   </div>
 </section>
 
@@ -195,7 +265,7 @@
 <!-- ================= HOST LOBBY ================= -->
 <section id="s-hostlobby" class="screen">
   <div class="wrap">
-    <div class="topbar"><button class="btn ghost sm" id="hostQuit">✕ End</button><div class="mini" id="hostTitle">MOKI</div><span></span></div>
+    <div class="topbar"><button class="btn ghost sm" id="hostQuit">✕ End</button><span class="role-badge host">HOST SCREEN</span><div class="mini" id="hostTitle">MOKI</div></div>
     <div class="card glass center">
       <p class="s" style="margin:0">Join at <b id="hostUrl"></b> with PIN</p>
       <div class="join-split">
@@ -220,7 +290,7 @@
 <!-- ================= PLAYER LOBBY ================= -->
 <section id="s-playerlobby" class="screen">
   <div class="wrap-sm center">
-    <div class="topbar"><button class="btn ghost sm" id="playerQuit">✕ Leave</button><div class="mini">LOBBY</div><span></span></div>
+    <div class="topbar"><button class="btn ghost sm" id="playerQuit">✕ Leave</button><span class="role-badge player">PLAYER</span><div class="mini">LOBBY</div></div>
     <div class="card glass">
       <div id="lobbyMoki" class="moki-xl"></div>
       <h2 class="t" id="lobbyNick" style="font-size:30px">You</h2>
@@ -243,20 +313,32 @@
 <!-- ================= QUESTION ================= -->
 <section id="s-question" class="screen">
   <div class="wrap">
-    <div class="qtop">
-      <div class="qnum" id="qNum">Q1 / 5</div>
-      <div class="timer" id="qTimer">20</div>
-      <div class="qnum" id="qScore">0 pts</div>
+    <div class="q-head">
+      <div class="q-chip" id="qNum">Q1 / 5</div>
+      <div class="ring" id="qRing">
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <circle class="track" cx="50" cy="50" r="44"></circle>
+          <circle class="bar" id="qRingBar" cx="50" cy="50" r="44"
+                  stroke-dasharray="276.46" stroke-dashoffset="0"></circle>
+        </svg>
+        <b id="qTimer">20</b>
+      </div>
+      <div class="q-chip" id="qScore">0 pts</div>
     </div>
+
     <img id="qImage" class="qimg" alt="" hidden>
-    <div class="qtext" id="qText">Question</div>
-    <div class="answers" id="qAnswers"></div>
+    <div class="qtext drama" id="qText">Question</div>
+    <div class="answers huge" id="qAnswers"></div>
+
     <div id="qStatus" class="awaiting" hidden></div>
+    <div class="q-reactions" id="qReactions" aria-live="polite"></div>
+
     <div class="row" id="hostQControls" style="justify-content:center;margin-top:14px" hidden>
       <button class="btn ghost sm" id="btnSkip">Skip to answer →</button>
       <span class="stat" style="max-width:190px"><b id="qResponses">0</b><span>ANSWERS IN</span></span>
     </div>
   </div>
+  <div class="q-moki" id="qMoki" aria-hidden="true"></div>
 </section>
 
 <!-- ================= REVEAL ================= -->
@@ -287,12 +369,13 @@
   <div class="wrap center">
     <h2 class="t" id="finalTitle">Final results</h2>
     <div class="podium" id="podium"></div>
+    <div class="levelup" id="levelUp" hidden>LEVEL UP! 🎉</div>
     <div id="finalYou" class="card glass" style="margin:18px auto;max-width:520px" hidden>
       <div class="row" style="justify-content:center">
         <div class="stat"><b id="fRank">-</b><span>RANK</span></div>
         <div class="stat"><b id="fScore">0</b><span>SCORE</span></div>
         <div class="stat"><b id="fAcc">0%</b><span>ACCURACY</span></div>
-        <div class="stat"><b id="fXp">+0</b><span>XP EARNED</span></div>
+        <div class="stat"><b id="fXp" class="xp-earned">+0</b><span>XP EARNED</span></div>
       </div>
       <div style="margin-top:12px;color:#fff;font-weight:800" id="fLevelText">Level 1</div>
       <div class="xpbar" style="margin-top:6px"><i id="fXpBar" style="width:0%"></i></div>

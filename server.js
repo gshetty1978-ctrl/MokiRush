@@ -206,6 +206,14 @@ function revealAnswer(game) {
   const rankOf = new Map(board.map(r => [r.id, r.rank]));
   const isLast = game.qIndex >= game.quiz.questions.length - 1;
 
+  // safe to share once the answer is out
+  const gotIt = [];
+  game.players.forEach(p => {
+    const a = game.answers.get(p.id);
+    if (a && a.correct) gotIt.push({ nick: p.nick, moki: p.moki, points: a.points });
+  });
+  gotIt.sort((x, y) => y.points - x.points);
+
   io.to('h:' + game.pin).emit('game:reveal', {
     index: game.qIndex,
     total: game.quiz.questions.length,
@@ -213,6 +221,7 @@ function revealAnswer(game) {
     answers: q.answers,
     counts,
     leaderboard: board.slice(0, 8),
+    gotIt,
     responses: game.answers.size,
     players: game.players.size,
     isLast
@@ -237,9 +246,18 @@ function revealAnswer(game) {
         streak: p.streak
       },
       leaderboard: board.slice(0, 5),
+      gotIt,
       isLast
     });
   });
+
+  // a solo run has nobody to press Next, so the server advances it
+  if (game.solo) {
+    game.revealTimer = setTimeout(() => {
+      if (game.state === 'reveal') nextStep(game);
+    }, 4200);
+    return;
+  }
 
   // if the host vanished, keep the game moving for the players
   game.revealTimer = setTimeout(() => {
@@ -500,6 +518,13 @@ io.on('connection', socket => {
     game.answers.set(p.id, { choice, ms: elapsed, correct, points });
 
     cb({ ok: true, locked: choice });
+
+    // everyone sees THAT someone answered - never what they picked
+    io.to('g:' + game.pin).emit('reaction:locked', {
+      id: p.id, nick: p.nick, moki: p.moki,
+      order: game.answers.size, players: game.players.size
+    });
+
     io.to('h:' + game.pin).emit('answer:count', {
       responses: game.answers.size,
       players: game.players.size
@@ -509,6 +534,51 @@ io.on('connection', socket => {
     if (game.answers.size >= live) {
       setTimeout(() => { if (game.state === 'question') revealAnswer(game); }, 350);
     }
+  });
+
+  /* Solo run: one socket is both the host and the only player. It reuses the
+     whole normal question/score/reveal path, so scoring stays server-side. */
+  socket.on('solo:start', (payload, ack) => {
+    const cb = typeof ack === 'function' ? ack : () => {};
+    const res = validateQuiz(payload && payload.quiz);
+    if (res.error) return cb({ ok: false, error: res.error });
+    if (games.size > 500) return cb({ ok: false, error: 'Server is busy, try again shortly.' });
+
+    let nick = clean(payload && payload.nick, LIMITS.nick);
+    if (nick.length < 2) nick = 'You';
+    const moki = validateMoki(payload && payload.moki);
+
+    const pin = newPin();
+    const game = makeGame(pin, socket.id, res.quiz);
+    game.solo = true;
+    games.set(pin, game);
+
+    const id = 'p' + Math.random().toString(36).slice(2, 10);
+    game.players.set(id, {
+      id,
+      token: Math.random().toString(36).slice(2) + Date.now().toString(36),
+      nick, moki, score: 0, streak: 0, bestStreak: 0, correct: 0, answered: 0,
+      connected: true, socketId: socket.id
+    });
+
+    socket.join('g:' + pin);
+    socketIndex.set(socket.id, { pin, role: 'player', playerId: id });
+
+    cb({
+      ok: true, pin, playerId: id, nick,
+      title: game.quiz.title, topic: game.quiz.topic,
+      questionCount: game.quiz.questions.length
+    });
+
+    io.to(socket.id).emit('game:starting', { in: 3 });
+    setTimeout(() => { if (games.has(pin)) askQuestion(game); }, 3000);
+  });
+
+  socket.on('solo:quit', () => {
+    const ref = socketIndex.get(socket.id);
+    if (!ref) return;
+    const game = games.get(ref.pin);
+    if (game && game.solo) destroyGame(ref.pin, 'Solo run ended.');
   });
 
   socket.on('disconnect', () => {
@@ -525,6 +595,7 @@ io.on('connection', socket => {
         if (g && !g.hostConnected) destroyGame(ref.pin, 'The host left - this game is over.');
       }, 20000);
     } else {
+      if (game.solo) return destroyGame(ref.pin, 'Solo run ended.');
       const p = game.players.get(ref.playerId);
       if (p) {
         p.connected = false;

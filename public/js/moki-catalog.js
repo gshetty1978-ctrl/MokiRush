@@ -45,7 +45,10 @@
       { id: 'happy',  name: 'Happy',  lvl: 0 },
       { id: 'sleepy', name: 'Sleepy', lvl: 1 },
       { id: 'wink',   name: 'Wink',   lvl: 2 },
-      { id: 'star',   name: 'Stars',  lvl: 5 }
+      { id: 'star',   name: 'Stars',  lvl: 5 },
+      { id: 'fierce', name: 'Fierce', lvl: 4 },
+      { id: 'heart',  name: 'Hearts', lvl: 6 },
+      { id: 'swirl',  name: 'Dizzy',  lvl: 8 }
     ],
     mouth: [
       { id: 'smile',  name: 'Smile',  lvl: 0 },
@@ -53,7 +56,9 @@
       { id: 'oh',     name: 'Whoa',   lvl: 0 },
       { id: 'smirk',  name: 'Smirk',  lvl: 1 },
       { id: 'tongue', name: 'Tongue', lvl: 3 },
-      { id: 'fang',   name: 'Fang',   lvl: 6 }
+      { id: 'fang',   name: 'Fang',   lvl: 6 },
+      { id: 'gasp',   name: 'Gasp',   lvl: 2 },
+      { id: 'kitty',  name: 'Kitty',  lvl: 5 }
     ],
     outfit: [
       { id: 'tee-red',    name: 'Red Tee',    c: '#FF5A5F', deco: 'none',   lvl: 0 },
@@ -88,7 +93,10 @@
       { id: 'party',  name: 'Party',    c: '#F472B6', lvl: 2 },
       { id: 'crown',  name: 'Crown',    c: '#FBBF24', lvl: 5 },
       { id: 'wizard', name: 'Wizard',   c: '#4F46E5', lvl: 7 },
-      { id: 'helmet', name: 'Helmet',   c: '#38BDF8', lvl: 10 }
+      { id: 'helmet', name: 'Helmet',   c: '#38BDF8', lvl: 10 },
+      { id: 'flower', name: 'Flower',   c: '#FB7185', lvl: 3 },
+      { id: 'halo',   name: 'Halo',     c: '#FDE68A', lvl: 9 },
+      { id: 'horns',  name: 'Horns',    c: '#EF4444', lvl: 11 }
     ],
     accessory: [
       { id: 'none',    name: 'None',        lvl: 0 },
@@ -97,7 +105,19 @@
       { id: 'blush',   name: 'Blush',       lvl: 2 },
       { id: 'freckle', name: 'Freckles',    lvl: 3 },
       { id: 'scarf',   name: 'Scarf',       lvl: 4 },
-      { id: 'headset', name: 'Headset',     lvl: 8 }
+      { id: 'headset', name: 'Headset',     lvl: 8 },
+      { id: 'bowtie',  name: 'Bow Tie',     lvl: 2 },
+      { id: 'mask',    name: 'Hero Mask',   lvl: 6 },
+      { id: 'monocle', name: 'Monocle',     lvl: 9 }
+    ],
+    aura: [
+      { id: 'none',    name: 'None',      lvl: 0 },
+      { id: 'glow',    name: 'Soft Glow', c: '#FFD86B', lvl: 1 },
+      { id: 'sparkle', name: 'Sparkles',  c: '#FFF06B', lvl: 3 },
+      { id: 'bubbles', name: 'Bubbles',   c: '#7DD3FC', lvl: 5 },
+      { id: 'flames',  name: 'Flames',    c: '#FB923C', lvl: 7 },
+      { id: 'stars',   name: 'Stardust',  c: '#C4B5FD', lvl: 9 },
+      { id: 'rainbow', name: 'Rainbow',   c: '#F472B6', lvl: 12 }
     ]
   };
 });

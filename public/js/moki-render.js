@@ -73,6 +73,17 @@
         return '<g fill="#FFC93C" stroke="#22203A" stroke-width="1.2">' +
           '<path d="M41 33l2.3 4.9 5.2.7-3.8 3.7.9 5.2-4.6-2.5-4.6 2.5.9-5.2-3.8-3.7 5.2-.7z"/>' +
           '<path d="M59 33l2.3 4.9 5.2.7-3.8 3.7.9 5.2-4.6-2.5-4.6 2.5.9-5.2-3.8-3.7 5.2-.7z"/></g>';
+      case 'fierce':
+        return '<g><g fill="#22203A"><circle cx="41" cy="41" r="4"/><circle cx="59" cy="41" r="4"/></g>' +
+          '<g stroke="#22203A" stroke-width="3" stroke-linecap="round"><path d="M34 33l11 4"/><path d="M66 33l-11 4"/></g></g>';
+      case 'heart':
+        return '<g fill="#FF4D8D">' +
+          '<path d="M41 45c-6-4-8-7-8-10a4 4 0 0 1 8-2 4 4 0 0 1 8 2c0 3-2 6-8 10z"/>' +
+          '<path d="M59 45c-6-4-8-7-8-10a4 4 0 0 1 8-2 4 4 0 0 1 8 2c0 3-2 6-8 10z"/></g>';
+      case 'swirl':
+        return '<g fill="none" stroke="#22203A" stroke-width="2.6" stroke-linecap="round">' +
+          '<path d="M41 40m-6 0a6 6 0 1 0 12 0a6 6 0 1 0-12 0M41 40a3 3 0 0 1 3 3"/>' +
+          '<path d="M59 40m-6 0a6 6 0 1 0 12 0a6 6 0 1 0-12 0M59 40a3 3 0 0 1 3 3"/></g>';
       default:
         return '<g fill="#22203A"><circle cx="41" cy="40" r="4"/><circle cx="59" cy="40" r="4"/></g>';
     }
@@ -90,6 +101,11 @@
         return '<g><path d="M39 49h22a11 11 0 0 1-22 0z" fill="#5B2233"/><ellipse cx="50" cy="57" rx="6" ry="4.5" fill="#FF7AA2"/></g>';
       case 'fang':
         return '<g><path d="M40 49h20a10 10 0 0 1-20 0z" fill="#5B2233"/><path d="M44 49l3 6 3-6z" fill="#fff"/></g>';
+      case 'gasp':
+        return '<ellipse cx="50" cy="53" rx="4.5" ry="6.5" fill="#5B2233"/>';
+      case 'kitty':
+        return '<g fill="none" stroke="#22203A" stroke-width="2.8" stroke-linecap="round">' +
+          '<path d="M43 50q3.5 4 7 0"/><path d="M50 50q3.5 4 7 0"/></g>';
       default:
         return '<path d="M42 50q8 8 16 0" fill="none" stroke="#22203A" stroke-width="3" stroke-linecap="round"/>';
     }
@@ -126,6 +142,15 @@
         return '<g><path d="M50 -4l16 32H34z" fill="' + color + '"/><rect x="28" y="26" width="44" height="6" rx="3" fill="' + color + '"/><circle cx="52" cy="14" r="2.6" fill="#FDE68A"/></g>';
       case 'helmet':
         return '<g><path d="M26 34a24 24 0 0 1 48 0z" fill="' + color + '" opacity=".55"/><rect x="24" y="32" width="52" height="6" rx="3" fill="#64748B"/></g>';
+      case 'flower':
+        return '<g><g fill="' + color + '" transform="translate(70 18)">' +
+          '<circle cx="0" cy="-6" r="5"/><circle cx="6" cy="0" r="5"/><circle cx="0" cy="6" r="5"/><circle cx="-6" cy="0" r="5"/>' +
+          '<circle cx="0" cy="0" r="4" fill="#FDE68A"/></g>' +
+          '<path d="M30 28q20-16 40 0" fill="none" stroke="#4ADE80" stroke-width="3"/></g>';
+      case 'halo':
+        return '<ellipse cx="50" cy="8" rx="17" ry="5" fill="none" stroke="' + color + '" stroke-width="4"/>';
+      case 'horns':
+        return '<g fill="' + color + '"><path d="M33 20q-6-10 2-14 2 7 7 10z"/><path d="M67 20q6-10-2-14-2 7-7 10z"/></g>';
       default:
         return '';
     }
@@ -148,6 +173,48 @@
           '<rect x="24" y="36" width="9" height="14" rx="4" fill="#334155"/>' +
           '<rect x="67" y="36" width="9" height="14" rx="4" fill="#334155"/>' +
           '<path d="M28 50q-4 8 6 9" fill="none" stroke="#334155" stroke-width="3"/></g>';
+      case 'bowtie':
+        return '<g fill="#EF4444" transform="translate(50 60)">' +
+          '<path d="M0 0l-11-6v12z"/><path d="M0 0l11-6v12z"/><circle cx="0" cy="0" r="3.2" fill="#B91C1C"/></g>';
+      case 'mask':
+        return '<path d="M28 34h44v9a10 10 0 0 1-10 8h-4l-8-5-8 5h-4a10 10 0 0 1-10-8z" fill="#4F46E5" opacity=".92"/>';
+      case 'monocle':
+        return '<g fill="none" stroke="#B8860B" stroke-width="2.4">' +
+          '<circle cx="59" cy="40" r="9"/><path d="M59 49v9"/></g>';
+      default:
+        return '';
+    }
+  }
+
+  /* Aura: a glow / particle layer drawn behind the character. The individual
+     particles are animated in CSS so this stays a plain string. */
+  function aura(id, color) {
+    switch (id) {
+      case 'glow':
+        return '<circle class="mk-aura-glow" cx="50" cy="62" r="46" fill="' + color + '" opacity=".28"/>';
+      case 'sparkle':
+        return '<g class="mk-aura-parts" fill="' + color + '">' +
+          '<path class="mk-p1" d="M14 30l2.2 4.6 4.6 2.2-4.6 2.2L14 43.6l-2.2-4.6L7.2 36.8l4.6-2.2z"/>' +
+          '<path class="mk-p2" d="M86 46l1.8 3.8 3.8 1.8-3.8 1.8L86 57.2l-1.8-3.8-3.8-1.8 3.8-1.8z"/>' +
+          '<path class="mk-p3" d="M78 16l1.6 3.4 3.4 1.6-3.4 1.6L78 26.6l-1.6-3.4-3.4-1.6 3.4-1.6z"/></g>';
+      case 'bubbles':
+        return '<g class="mk-aura-parts" fill="none" stroke="' + color + '" stroke-width="2.4">' +
+          '<circle class="mk-p1" cx="16" cy="60" r="7"/><circle class="mk-p2" cx="84" cy="44" r="5"/>' +
+          '<circle class="mk-p3" cx="80" cy="76" r="6"/></g>';
+      case 'flames':
+        return '<g class="mk-aura-parts" fill="' + color + '" opacity=".85">' +
+          '<path class="mk-p1" d="M14 78c0-8 7-10 7-18 5 5 7 9 7 15a7 7 0 0 1-14 3z"/>' +
+          '<path class="mk-p2" d="M86 78c0-8-7-10-7-18-5 5-7 9-7 15a7 7 0 0 0 14 3z"/></g>';
+      case 'stars':
+        return '<g class="mk-aura-parts" fill="' + color + '">' +
+          '<circle class="mk-p1" cx="12" cy="40" r="3.4"/><circle class="mk-p2" cx="88" cy="34" r="2.8"/>' +
+          '<circle class="mk-p3" cx="84" cy="70" r="3.2"/><circle class="mk-p1" cx="20" cy="86" r="2.4"/></g>';
+      case 'rainbow':
+        return '<g fill="none" stroke-width="5" opacity=".7">' +
+          '<path d="M8 92a42 42 0 0 1 84 0" stroke="#F472B6"/>' +
+          '<path d="M15 92a35 35 0 0 1 70 0" stroke="#FBBF24"/>' +
+          '<path d="M22 92a28 28 0 0 1 56 0" stroke="#34D399"/>' +
+          '<path d="M29 92a21 21 0 0 1 42 0" stroke="#60A5FA"/></g>';
       default:
         return '';
     }
@@ -163,6 +230,7 @@
     var pantsC = get('pants', c.pants).c;
     var shoeC = get('shoes', c.shoes).c;
     var hatDef = get('hat', c.hat);
+    var auraDef = get('aura', c.aura);
     var mood = o.mood || 'idle';
 
     var body =
@@ -193,6 +261,7 @@
 
     return '<svg class="moki moki--' + mood + '" viewBox="0 0 100 112" ' +
       'role="img" aria-label="MOKI character" focusable="false">' +
+      '<g class="mk-aura">' + aura(c.aura, auraDef.c || '#FFD86B') + '</g>' +
       '<ellipse class="mk-shadow" cx="50" cy="108" rx="24" ry="4" fill="rgba(0,0,0,.18)"/>' +
       '<g class="mk-body">' + body + head + '</g>' +
       '</svg>';
