@@ -136,6 +136,27 @@ Supabase or Render Postgres work identically; only the connection string changes
 
 ---
 
+## Running it offline
+
+The game needs a network but not the internet - it makes **no external requests at all**.
+Socket.IO, the MOKI characters, the QR encoder, the sound effects, the question bank and
+the Baloo 2 font are all served from your own machine.
+
+- **Same Wi-Fi:** run `npm start`, then open the app on the host PC at your LAN address
+  (e.g. `http://192.168.1.5:3000`), *not* `localhost` - the QR encodes whatever address
+  the host browser is on, so `localhost` would send every phone back to itself.
+- **No router at all:** turn on Windows Mobile Hotspot, let the phones join it, and use the
+  hotspot IP the same way.
+
+Quiz codes still work offline - with no `DATABASE_URL` the store falls back to
+`data/quizzes.json`. Those codes are local only and will not resolve on the deployed site.
+
+The font lives in `public/fonts/` (Baloo 2, SIL Open Font License 1.1, licence included).
+It is a variable font, so one file per script covers every weight the UI uses, and the
+browser fetches only the scripts actually on screen - 33KB for Latin.
+
+---
+
 ## Joining by QR
 
 The host lobby shows a QR code next to the PIN. It encodes `<origin>/#<pin>`, and
