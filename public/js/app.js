@@ -1193,6 +1193,14 @@
     var cv = $('confetti'); cv.width = innerWidth; cv.height = innerHeight;
   });
 
+  /* Installable on phones. Registration is best-effort: if it fails the game
+     works exactly as before. */
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function () {});
+    });
+  }
+
   /* ---------------- boot ---------------- */
   if (!profile.name) profile.moki = MOKI.randomConfig(1);
   save();

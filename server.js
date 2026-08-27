@@ -6,10 +6,23 @@ const { Server } = require('socket.io');
 const CATALOG = require('./public/js/moki-catalog.js');
 const BANK = require('./question-bank.js');
 const { create: createStore, normalizeCode } = require('./store.js');
+const { createLimiter, createSocketLimiter } = require('./ratelimit.js');
 
 const store = createStore();
 
+/* Public endpoints are rate limited per IP - this app is on a public URL and
+   the quiz library is shared, so one script should not be able to fill it. */
+const sparkLimit = createLimiter({ windowMs: 60000, max: 20, name: 'question requests' });
+const saveLimit  = createLimiter({ windowMs: 60000, max: 10, name: 'quiz saves' });
+const readLimit  = createLimiter({ windowMs: 60000, max: 60, name: 'lookups' });
+
+/* Socket floods: creating games and joining are the expensive ones. */
+const createLimit = createSocketLimiter({ windowMs: 60000, max: 12 });
+const joinLimit   = createSocketLimiter({ windowMs: 60000, max: 30 });
+
 const app = express();
+// Render sits behind a proxy, so req.ip must come from X-Forwarded-For
+app.set('trust proxy', 1);
 app.use(express.json({ limit: '3mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -340,6 +353,7 @@ io.on('connection', socket => {
 
   socket.on('host:create', (payload, ack) => {
     const cb = typeof ack === 'function' ? ack : () => {};
+    if (!createLimit.allow(socket.id)) return cb({ ok: false, error: 'Slow down a moment, then try again.' });
     const res = validateQuiz(payload && payload.quiz);
     if (res.error) return cb({ ok: false, error: res.error });
     if (games.size > 500) return cb({ ok: false, error: 'Server is at capacity, try again shortly.' });
@@ -371,6 +385,8 @@ io.on('connection', socket => {
 
   socket.on('player:join', (payload, ack) => {
     const cb = typeof ack === 'function' ? ack : () => {};
+    // stops PIN guessing by brute force as well as join floods
+    if (!joinLimit.allow(socket.id)) return cb({ ok: false, error: 'Too many attempts. Wait a moment.' });
     const pin = clean(payload && payload.pin, 6);
     if (!/^\d{6}$/.test(pin)) return cb({ ok: false, error: 'PIN must be 6 digits.' });
     const game = games.get(pin);
@@ -540,6 +556,7 @@ io.on('connection', socket => {
      whole normal question/score/reveal path, so scoring stays server-side. */
   socket.on('solo:start', (payload, ack) => {
     const cb = typeof ack === 'function' ? ack : () => {};
+    if (!createLimit.allow(socket.id)) return cb({ ok: false, error: 'Slow down a moment, then try again.' });
     const res = validateQuiz(payload && payload.quiz);
     if (res.error) return cb({ ok: false, error: res.error });
     if (games.size > 500) return cb({ ok: false, error: 'Server is busy, try again shortly.' });
@@ -584,6 +601,8 @@ io.on('connection', socket => {
   socket.on('disconnect', () => {
     const ref = socketIndex.get(socket.id);
     socketIndex.delete(socket.id);
+    createLimit.forget(socket.id);
+    joinLimit.forget(socket.id);
     if (!ref) return;
     const game = games.get(ref.pin);
     if (!game) return;
@@ -631,7 +650,7 @@ app.get('/api/pin/:pin', (req, res) => {
 app.get('/api/topics', (_req, res) => res.json(BANK.topics()));
 
 // Offline "MOKI Spark" generator - no external or paid API involved.
-app.post('/api/spark', (req, res) => {
+app.post('/api/spark', sparkLimit, (req, res) => {
   const topic = clean(req.body && req.body.topic, 40);
   const count = Math.min(10, Math.max(1, Number(req.body && req.body.count) || 5));
   const questions = BANK.generate(topic, count);
@@ -647,7 +666,7 @@ app.post('/api/spark', (req, res) => {
 /* ------------------------------------------------------------------ *
  * quiz library - share a quiz with a short code instead of a file
  * ------------------------------------------------------------------ */
-app.post('/api/quiz', async (req, res) => {
+app.post('/api/quiz', saveLimit, async (req, res) => {
   const result = validateQuiz(req.body && req.body.quiz);
   if (result.error) return res.status(400).json({ ok: false, error: result.error });
   try {
@@ -660,7 +679,7 @@ app.post('/api/quiz', async (req, res) => {
   }
 });
 
-app.get('/api/quiz/:code', async (req, res) => {
+app.get('/api/quiz/:code', readLimit, async (req, res) => {
   const code = normalizeCode(req.params.code);
   if (!code) return res.status(404).json({ ok: false, error: 'No quiz found with that code.' });
   try {
