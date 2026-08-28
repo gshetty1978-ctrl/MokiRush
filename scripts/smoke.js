@@ -2,7 +2,20 @@
    Covers the paths most likely to break: joining, server-side scoring, answer
    validation, teams, solo, cosmetic validation and the quiz-code API. */
 const path = require('path');
-const { io } = require(path.join(__dirname, '..', 'node_modules', 'socket.io-client'));
+
+let io;
+try {
+  io = require(path.join(__dirname, '..', 'node_modules', 'socket.io-client')).io;
+} catch (e) {
+  console.error([
+    '',
+    'The test client is missing. Install it with:',
+    '',
+    '  npm install',
+    ''
+  ].join('\n'));
+  process.exit(1);
+}
 const URL = process.env.SMOKE_URL || 'http://localhost:3210';
 
 let fails = 0;
@@ -98,4 +111,19 @@ const quiz = {
 
   console.log(fails ? '\n' + fails + ' FAILURES' : '\nALL SMOKE TESTS PASSED');
   process.exit(fails ? 1 : 0);
-})().catch(e => { console.error('ERROR', e); process.exit(1); });
+})().catch(e => {
+  const msg = (e && e.message) || '';
+  if (msg.includes('fetch failed') || msg.includes('ECONNREFUSED')) {
+    console.error([
+      '',
+      'Could not reach ' + URL + '.',
+      'Start the server in another terminal first, on the port the tests expect:',
+      '',
+      '  PORT=3210 npm start',
+      ''
+    ].join('\n'));
+    process.exit(1);
+  }
+  console.error('ERROR', e);
+  process.exit(1);
+});
