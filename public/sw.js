@@ -18,6 +18,7 @@ var SHELL = [
   '/js/qr.js',
   '/fonts/baloo2-latin.woff2',
   '/icons/moki-192.png',
+  '/favicon.svg',
   '/manifest.webmanifest'
 ];
 
