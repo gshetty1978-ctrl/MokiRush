@@ -159,12 +159,31 @@ browser fetches only the scripts actually on screen - 33KB for Latin.
 
 ## Keeping the service awake
 
-A Render free web service sleeps after ~15 minutes with no traffic, and the
-next visitor waits 30-60s for it to boot. That is rough when a room full of
-people is trying to join at once.
+A Render free web service sleeps after ~15 minutes with no traffic, and the next
+visitor waits 30-60s for it to boot. That is rough when a room full of people is
+trying to join at once.
 
-`waker.js` pings the service every ~12 minutes to keep it warm. It is off
-unless you turn it on:
+### Recommended: an external pinger (UptimeRobot)
+
+1. Sign up at <https://uptimerobot.com> (free plan).
+2. **+ New monitor** → type **HTTP(s)**.
+3. URL: `https://<your-service>.onrender.com/healthz`
+4. Interval: **5 minutes**.
+5. Save.
+
+That is it. An external pinger is better than pinging from inside the app for
+two reasons: it does not spend the instance’s own free hours on the requests,
+and it still reaches the service after it has fallen asleep - a self-ping cannot
+wake something that is already down.
+
+`/healthz` returns a plain `ok` and touches neither the database nor any game
+state, so it is cheap to hit every 5 minutes.
+
+### Built-in fallback
+
+`waker.js` can do the same from inside the app if you would rather not use an
+external service. It is **off** unless `KEEP_AWAKE=1`, and refuses to ping
+localhost so local runs are unaffected.
 
 | Variable | Value |
 | --- | --- |
@@ -173,20 +192,9 @@ unless you turn it on:
 | `KEEP_AWAKE_MINUTES` | optional, default 12, capped at 14 |
 | `PUBLIC_URL` | only if `RENDER_EXTERNAL_URL` is not set |
 
-The startup log says which mode it is in. It refuses to ping localhost, so it
-never runs during local development.
-
-**Read this before enabling it.** A free instance gets ~750 hours a month and
-staying awake 24/7 burns ~720, so:
-
-- run only ONE always-awake free service on the account, and
-- prefer `KEEP_AWAKE_HOURS` to stay warm only when people actually play.
-  `KEEP_AWAKE_HOURS=2-18` is roughly 07:30-23:30 IST and uses ~500 hours.
-
-An external pinger (UptimeRobot, cron-job.org) does the same job without
-spending the app’s own hours on the requests, and keeps working even if the
-instance has already fallen asleep - a self-ping cannot wake a service that is
-already down. Point either at `/healthz`.
+A free instance gets ~750 hours a month and staying awake 24/7 burns ~720, so
+run only one always-awake free service per account, and prefer
+`KEEP_AWAKE_HOURS` to stay warm only when people actually play.
 
 ---
 
