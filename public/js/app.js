@@ -259,7 +259,7 @@
 
   function partLabel(p) {
     return ({
-      skin: 'Skin', hair: 'Hair style', hairColor: 'Hair colour', eyes: 'Eyes', mouth: 'Mouth',
+      species: 'Creature', skin: 'Skin', hair: 'Hair style', hairColor: 'Hair colour', eyes: 'Eyes', mouth: 'Mouth',
       outfit: 'Outfit', pants: 'Pants', shoes: 'Shoes', hat: 'Hats', accessory: 'Accessories',
       aura: 'Aura ✨'
     })[p] || p;
@@ -271,7 +271,7 @@
   }
 
   /* ---------------- customizer ---------------- */
-  var activePart = 'skin';
+  var activePart = 'species';
   var draft = null;
   var custReturn = 'home';
 
@@ -316,6 +316,35 @@
       host.appendChild(b);
     });
   }
+  /* The big preview turns to follow the pointer, which is the clearest way to
+     show the character is actually a solid object. */
+  (function wirePreviewDrag() {
+    var host = $('custPreview');
+    if (!host) return;
+    function aim(e) {
+      var box = host.getBoundingClientRect();
+      var p = e.touches ? e.touches[0] : e;
+      var dx = (p.clientX - (box.left + box.width / 2)) / (box.width / 2);
+      var dy = (p.clientY - (box.top + box.height / 2)) / (box.height / 2);
+      var scene = host.querySelector('.mk-scene');
+      var moki = host.querySelector('.moki3d');
+      if (!scene || !moki) return;
+      moki.classList.add('mk-interactive');
+      scene.style.setProperty('--turn', Math.max(-38, Math.min(38, dx * 38)) + 'deg');
+      scene.style.setProperty('--tilt', Math.max(-16, Math.min(16, -dy * 16)) + 'deg');
+    }
+    function release() {
+      var scene = host.querySelector('.mk-scene');
+      var moki = host.querySelector('.moki3d');
+      if (scene) { scene.style.removeProperty('--turn'); scene.style.removeProperty('--tilt'); }
+      if (moki) moki.classList.remove('mk-interactive');
+    }
+    host.addEventListener('pointermove', aim);
+    host.addEventListener('pointerleave', release);
+    host.addEventListener('touchmove', aim, { passive: true });
+    host.addEventListener('touchend', release);
+  })();
+
   $('btnRandom').onclick = function () {
     draft = MOKI.randomConfig(levelOf(profile.xp));
     profile.moki = MOKI.sanitize(draft); save();
@@ -727,7 +756,7 @@
     d.className = 'rx' + (good ? ' good' : '');
     var m = document.createElement('div');
     m.className = 'moki-wrap';
-    m.innerHTML = MOKI.svg(moki, { mood: good ? 'correct' : 'idle' });
+    m.innerHTML = MOKI.svg(moki, { mood: good ? 'correct' : 'idle', flat: true });
     var t = document.createElement('span');
     t.textContent = nick + ' ' + label;
     d.appendChild(m); d.appendChild(t);
@@ -933,7 +962,7 @@
       c.className = 'player-chip' + (p.connected ? '' : ' off');
       var m = document.createElement('div');
       m.className = 'moki-xs';
-      m.innerHTML = MOKI.svg(p.moki, { mood: 'idle' });
+      m.innerHTML = MOKI.svg(p.moki, { mood: 'idle', flat: true });
       var n = document.createElement('div');
       n.className = 'nm';
       n.textContent = p.nick;
@@ -1160,7 +1189,7 @@
       row.style.animationDelay = (i * 0.06) + 's';
       var mk = document.createElement('div');
       mk.className = 'moki-xs';
-      mk.innerHTML = MOKI.svg(r.moki, { mood: r.rank === 1 ? 'win' : 'idle' });
+      mk.innerHTML = MOKI.svg(r.moki, { mood: r.rank === 1 ? 'win' : 'idle', flat: true });
       row.innerHTML = '<span class="rk">' + (r.rank === 1 ? '👑' : r.rank) + '</span>';
       row.appendChild(mk);
       var nm = document.createElement('span');

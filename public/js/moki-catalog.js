@@ -9,6 +9,20 @@
 
   // lvl = level required to unlock (0 = available from the start)
   return {
+    species: [
+      { id: 'moki',   name: 'Classic',  lvl: 0 },
+      { id: 'bear',   name: 'Bear',     lvl: 0 },
+      { id: 'cat',    name: 'Cat',      lvl: 0 },
+      { id: 'bunny',  name: 'Bunny',    lvl: 0 },
+      { id: 'fox',    name: 'Fox',      lvl: 1 },
+      { id: 'frog',   name: 'Frog',     lvl: 2 },
+      { id: 'panda',  name: 'Panda',    lvl: 3 },
+      { id: 'owl',    name: 'Owl',      lvl: 4 },
+      { id: 'sheep',  name: 'Sheep',    lvl: 5 },
+      { id: 'dino',   name: 'Dino',     lvl: 6 },
+      { id: 'dragon', name: 'Dragon',   lvl: 8 },
+      { id: 'bot',    name: 'Bot',      lvl: 10 }
+    ],
     skin: [
       { id: 'sand',   name: 'Sand',   c: '#F7D2AE', lvl: 0 },
       { id: 'peach',  name: 'Peach',  c: '#F0B48C', lvl: 0 },

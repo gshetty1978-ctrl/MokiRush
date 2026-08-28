@@ -1,0 +1,132 @@
+/* ============ MOKI in 3D ============
+   The character's parts live on separate Z planes inside a real CSS 3D scene,
+   so it turns and tilts as a solid object instead of a picture of one.
+
+   Depth is expressed in cqw (a share of the character's own width), so one
+   ruleset works for the 210px customizer preview and the 26px leaderboard
+   chip alike. Browsers without container units simply get depth 0, which
+   renders as the old flat character - no breakage. */
+
+.moki3d{
+  container-type: inline-size;
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 100 / 112;
+  perspective: 46cqw;
+  perspective-origin: 50% 42%;
+}
+
+.mk-scene{
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  /* --turn and --tilt are what animations and the pointer drive */
+  transform: rotateY(var(--turn, 0deg)) rotateX(var(--tilt, 0deg)) translateY(var(--hop, 0px));
+  transition: transform .18s ease-out;
+  will-change: transform;
+}
+
+.mk-l{
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+.mk-l svg{ width: 100%; height: 100%; overflow: visible; display: block; }
+
+/* the three planes - this separation is the whole effect */
+.mk-l-aura{ transform: translateZ(-13cqw); }
+.mk-l-body{ transform: translateZ(0); }
+.mk-l-head{ transform: translateZ(9cqw); }
+
+/* contact shadow on the floor, which grounds the character */
+.mk-ground{
+  position: absolute;
+  left: 50%; bottom: 2%;
+  width: 46%; height: 7%;
+  transform: translateX(-50%) rotateX(78deg);
+  background: radial-gradient(ellipse at center, rgba(0,0,0,.42) 0%, rgba(0,0,0,.16) 55%, transparent 75%);
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+.mk-sr{
+  position:absolute;width:1px;height:1px;overflow:hidden;
+  clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;
+}
+
+/* ---------- idle: a slow, gentle turn so it always feels alive ---------- */
+.moki3d.moki--idle .mk-scene{ animation: mk3dIdle 6s ease-in-out infinite; }
+@keyframes mk3dIdle{
+  0%,100%{ transform: rotateY(-11deg) rotateX(3deg) translateY(0); }
+  50%    { transform: rotateY(11deg)  rotateX(-2deg) translateY(-1.5%); }
+}
+
+/* the head lags the body very slightly, which reads as weight */
+.moki3d.moki--idle .mk-l-head{ animation: mk3dHead 6s ease-in-out infinite; }
+@keyframes mk3dHead{
+  0%,100%{ transform: translateZ(9cqw) rotateY(4deg); }
+  50%    { transform: translateZ(9cqw) rotateY(-4deg); }
+}
+
+/* ---------- waving (home screen) ---------- */
+.moki3d.moki--wave .mk-scene{ animation: mk3dWave 3.2s ease-in-out infinite; }
+@keyframes mk3dWave{
+  0%,100%{ transform: rotateY(-16deg) rotateX(2deg); }
+  50%    { transform: rotateY(6deg) rotateX(-3deg) translateY(-2%); }
+}
+
+/* ---------- correct: a hop with a full spin ---------- */
+.moki3d.moki--correct .mk-scene{ animation: mk3dYes 1.15s cubic-bezier(.34,1.56,.64,1) 2; }
+@keyframes mk3dYes{
+  0%  { transform: rotateY(0deg) translateY(0) scale(1); }
+  35% { transform: rotateY(180deg) translateY(-16%) scale(1.06); }
+  70% { transform: rotateY(360deg) translateY(0) scale(.98); }
+  100%{ transform: rotateY(360deg) translateY(0) scale(1); }
+}
+
+/* ---------- wrong: a stagger, tipping away from the camera ---------- */
+.moki3d.moki--wrong .mk-scene{ animation: mk3dNo .5s ease-in-out 2; }
+@keyframes mk3dNo{
+  0%,100%{ transform: rotateY(0deg) rotateZ(0deg) translateX(0); }
+  25%    { transform: rotateY(-24deg) rotateZ(-7deg) translateX(-5%); }
+  75%    { transform: rotateY(24deg) rotateZ(7deg) translateX(5%); }
+}
+
+/* ---------- winning: a slow turntable ---------- */
+.moki3d.moki--win .mk-scene{ animation: mk3dWin 3.4s linear infinite; }
+@keyframes mk3dWin{
+  0%  { transform: rotateY(0deg) translateY(0); }
+  25% { transform: rotateY(90deg) translateY(-5%); }
+  50% { transform: rotateY(180deg) translateY(0); }
+  75% { transform: rotateY(270deg) translateY(-5%); }
+  100%{ transform: rotateY(360deg) translateY(0); }
+}
+.moki3d.moki--win .mk-ground{ animation: mkGround 3.4s ease-in-out infinite; }
+@keyframes mkGround{ 50%{ opacity:.55; width:38%; } }
+
+/* ---------- the big preview follows the pointer ---------- */
+.moki3d.mk-interactive .mk-scene{ animation: none; }
+.moki3d.mk-interactive{ cursor: grab; }
+.moki3d.mk-interactive:active{ cursor: grabbing; }
+
+/* ---------- keep the old 2D part animations working on top ---------- */
+.moki3d .mk-arms{ transform-origin: 50px 70px; animation: sway 3.1s ease-in-out infinite; }
+.moki3d.moki--wave .mk-arms{ animation: wave 1.5s ease-in-out infinite; transform-origin: 74px 68px; }
+.moki3d .mk-torso, .moki3d .mk-legs{ transform-origin: 50px 100px; }
+
+/* tiny sizes: drop the depth and the extra paint, keep the silhouette.
+   A 26px leaderboard chip gains nothing from parallax. */
+@container (max-width: 46px){
+  .mk-l-head{ transform: translateZ(3cqw); }
+  .mk-l-aura{ transform: translateZ(-5cqw); }
+  .mk-ground{ display: none; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .moki3d .mk-scene,
+  .moki3d .mk-l-head,
+  .moki3d .mk-arms,
+  .moki3d .mk-ground{ animation: none !important; }
+  .mk-scene{ transform: rotateY(-8deg) rotateX(2deg); }
+}

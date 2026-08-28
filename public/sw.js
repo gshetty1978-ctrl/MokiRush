@@ -7,11 +7,12 @@
  *
  * Socket.IO traffic is never cached - it must always hit the network.
  */
-var VERSION = 'moki-v3';
+var VERSION = 'moki-v4';
 var SHELL = [
   '/',
   '/css/style.css',
   '/css/game.css',
+  '/css/moki3d.css',
   '/js/app.js',
   '/js/moki-catalog.js',
   '/js/moki-render.js',

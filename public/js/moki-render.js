@@ -33,6 +33,95 @@
     return out;
   }
 
+  /* Shifts a hex colour lighter (+) or darker (-) so ears and muzzles read as
+     the same creature rather than flat stickers. */
+  function tint(hex, amt) {
+    var h = String(hex || '#cccccc').replace('#', '');
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    var n = parseInt(h, 16);
+    var to = function (v) { return Math.max(0, Math.min(255, Math.round(v + amt))); };
+    return '#' + [to(n >> 16 & 255), to(n >> 8 & 255), to(n & 255)]
+      .map(function (v) { return ('0' + v.toString(16)).slice(-2); }).join('');
+  }
+
+  /* Drawn BEHIND the head - ears, horns, crests. */
+  function speciesBack(id, skin) {
+    var dark = tint(skin, -34);
+    switch (id) {
+      case 'bear':
+        return '<g fill="' + skin + '"><circle cx="30" cy="22" r="10"/><circle cx="70" cy="22" r="10"/></g>' +
+          '<g fill="' + tint(skin, -18) + '"><circle cx="30" cy="22" r="5"/><circle cx="70" cy="22" r="5"/></g>';
+      case 'panda':
+        return '<g fill="#2B2440"><circle cx="30" cy="21" r="10"/><circle cx="70" cy="21" r="10"/></g>';
+      case 'cat':
+        return '<g fill="' + skin + '"><path d="M28 26 30 6l16 12z"/><path d="M72 26 70 6 54 18z"/></g>' +
+          '<g fill="#FF9FB8"><path d="M32 22 33 12l7 6z"/><path d="M68 22 67 12l-7 6z"/></g>';
+      case 'fox':
+        return '<g fill="' + skin + '"><path d="M26 28 27 2l19 16z"/><path d="M74 28 73 2 54 18z"/></g>' +
+          '<g fill="#2B2440"><path d="M30 20 31 8l9 8z"/><path d="M70 20 69 8l-9 8z"/></g>';
+      case 'bunny':
+        return '<g fill="' + skin + '"><ellipse cx="36" cy="8" rx="7" ry="20"/><ellipse cx="64" cy="8" rx="7" ry="20"/></g>' +
+          '<g fill="#FF9FB8"><ellipse cx="36" cy="9" rx="3.4" ry="14"/><ellipse cx="64" cy="9" rx="3.4" ry="14"/></g>';
+      case 'sheep':
+        return '<g fill="' + dark + '"><ellipse cx="26" cy="34" rx="8" ry="5"/><ellipse cx="74" cy="34" rx="8" ry="5"/></g>' +
+          '<g fill="#F4F1FF"><circle cx="34" cy="20" r="9"/><circle cx="50" cy="14" r="10"/><circle cx="66" cy="20" r="9"/></g>';
+      case 'owl':
+        return '<g fill="' + skin + '"><path d="M30 20 28 6l14 8z"/><path d="M70 20 72 6 58 14z"/></g>';
+      case 'dino':
+        return '<g fill="' + tint(skin, -46) + '"><path d="M50 6l7 12H43z"/><path d="M36 12l6 10H31z"/><path d="M64 12l-6 10h11z"/></g>';
+      case 'dragon':
+        return '<g fill="#F1E4C3"><path d="M34 18q-8-10-2-16 6 6 10 12z"/><path d="M66 18q8-10 2-16-6 6-10 12z"/></g>';
+      case 'bot':
+        return '<g><rect x="48" y="0" width="4" height="14" rx="2" fill="#94A3B8"/>' +
+          '<circle cx="50" cy="2" r="4" fill="#FF5A7A"/>' +
+          '<g fill="#94A3B8"><rect x="20" y="34" width="8" height="16" rx="3"/><rect x="72" y="34" width="8" height="16" rx="3"/></g></g>';
+      default:
+        return '';
+    }
+  }
+
+  /* Drawn ON the head, under the eyes - muzzles, beaks, patches. */
+  function speciesFront(id, skin) {
+    var light = tint(skin, 40);
+    switch (id) {
+      case 'bear':
+        return '<ellipse cx="50" cy="49" rx="13" ry="10" fill="' + light + '"/>' +
+          '<ellipse cx="50" cy="44" rx="4" ry="3" fill="#2B2440"/>';
+      case 'panda':
+        return '<g fill="#2B2440" opacity=".9"><ellipse cx="41" cy="40" rx="8.5" ry="9.5"/><ellipse cx="59" cy="40" rx="8.5" ry="9.5"/></g>' +
+          '<ellipse cx="50" cy="50" rx="10" ry="7" fill="#F4F1FF"/>' +
+          '<ellipse cx="50" cy="46" rx="3.6" ry="2.6" fill="#2B2440"/>';
+      case 'cat':
+        return '<ellipse cx="50" cy="50" rx="11" ry="8" fill="' + light + '"/>' +
+          '<path d="M50 46l-3.5 3h7z" fill="#FF9FB8"/>' +
+          '<g stroke="#2B2440" stroke-width="1.4" opacity=".65" stroke-linecap="round">' +
+          '<path d="M30 47h10"/><path d="M30 52h10"/><path d="M70 47H60"/><path d="M70 52H60"/></g>';
+      case 'fox':
+        return '<path d="M50 40q13 4 0 18-13-14 0-18z" fill="' + light + '"/>' +
+          '<ellipse cx="50" cy="55" rx="3.4" ry="2.6" fill="#2B2440"/>';
+      case 'frog':
+        return '<g fill="' + light + '" opacity=".55"><circle cx="38" cy="34" r="10"/><circle cx="62" cy="34" r="10"/></g>' +
+          '<g fill="#2B2440" opacity=".5"><circle cx="44" cy="47" r="1.4"/><circle cx="56" cy="47" r="1.4"/></g>';
+      case 'owl':
+        return '<g fill="' + light + '" opacity=".55"><circle cx="41" cy="40" r="11"/><circle cx="59" cy="40" r="11"/></g>' +
+          '<path d="M50 44l5 8h-10z" fill="#FFB020"/>';
+      case 'sheep':
+        return '<ellipse cx="50" cy="50" rx="11" ry="8" fill="' + light + '"/>' +
+          '<ellipse cx="50" cy="46" rx="3.4" ry="2.4" fill="#2B2440"/>';
+      case 'dino':
+        return '<ellipse cx="50" cy="50" rx="14" ry="9" fill="' + light + '"/>' +
+          '<g fill="#2B2440"><circle cx="45" cy="46" r="1.5"/><circle cx="55" cy="46" r="1.5"/></g>';
+      case 'dragon':
+        return '<ellipse cx="50" cy="50" rx="13" ry="9" fill="' + light + '"/>' +
+          '<g fill="#2B2440"><circle cx="45" cy="46" r="1.6"/><circle cx="55" cy="46" r="1.6"/></g>';
+      case 'bot':
+        return '<rect x="30" y="32" width="40" height="18" rx="7" fill="#1E293B" opacity=".85"/>' +
+          '<rect x="40" y="56" width="20" height="4" rx="2" fill="#64748B"/>';
+      default:
+        return '';
+    }
+  }
+
   function hair(styleId, color, skin) {
     switch (styleId) {
       case 'short':
@@ -220,10 +309,77 @@
     }
   }
 
-  /* Returns an SVG string. mood: idle | correct | wrong | win */
-  function svg(cfg, opts) {
+  /* Depth shading. Each instance needs its own gradient ids or the first one
+     on the page wins for everybody. */
+  var uid = 0;
+
+  function shadingDefs(id, skin) {
+    return '<defs>' +
+      // roundness: light from the upper left, shadow to the lower right
+      '<radialGradient id="lit' + id + '" cx="32%" cy="26%" r="78%">' +
+        '<stop offset="0%" stop-color="#fff" stop-opacity=".55"/>' +
+        '<stop offset="45%" stop-color="#fff" stop-opacity=".10"/>' +
+        '<stop offset="100%" stop-color="#fff" stop-opacity="0"/>' +
+      '</radialGradient>' +
+      '<radialGradient id="shade' + id + '" cx="72%" cy="78%" r="70%">' +
+        '<stop offset="0%" stop-color="#1A0E2E" stop-opacity=".40"/>' +
+        '<stop offset="55%" stop-color="#1A0E2E" stop-opacity=".12"/>' +
+        '<stop offset="100%" stop-color="#1A0E2E" stop-opacity="0"/>' +
+      '</radialGradient>' +
+      // rim light along the right edge, the thing that really reads as 3D
+      '<linearGradient id="rim' + id + '" x1="0%" y1="0%" x2="100%" y2="30%">' +
+        '<stop offset="60%" stop-color="#fff" stop-opacity="0"/>' +
+        '<stop offset="100%" stop-color="#CDE7FF" stop-opacity=".55"/>' +
+      '</linearGradient>' +
+      '</defs>';
+  }
+
+  function layer(cls, inner) {
+    return '<div class="mk-l ' + cls + '">' +
+      '<svg viewBox="0 0 100 112" focusable="false" aria-hidden="true">' + inner + '</svg>' +
+      '</div>';
+  }
+
+  /* Returns the markup for a MOKI. The parts sit on separate Z planes inside a
+     CSS 3D scene, so the character turns as a solid object rather than a
+     picture of one. mood: idle | wave | correct | wrong | win */
+  /* At chip and leaderboard size the parallax is invisible but the extra two
+     SVG layers and three gradients are not - 20 of them cost real layout time
+     on a phone. flat:true renders one plain SVG with the same silhouette. */
+  function flatSvg(cfg, opts) {
     var o = opts || {};
     var c = sanitize(cfg);
+    var skin = get('skin', c.skin).c;
+    var hairC = get('hairColor', c.hairColor).c;
+    var fit = get('outfit', c.outfit);
+    var pantsC = get('pants', c.pants).c;
+    var shoeC = get('shoes', c.shoes).c;
+    var hatDef = get('hat', c.hat);
+    return '<svg class="moki moki-flat moki--' + (o.mood || 'idle') + '" viewBox="0 0 100 112" ' +
+      'role="img" aria-label="MOKI character" focusable="false">' +
+      '<ellipse cx="50" cy="108" rx="22" ry="4" fill="rgba(0,0,0,.18)"/>' +
+      '<g class="mk-body">' +
+        '<ellipse cx="26" cy="72" rx="6" ry="10" fill="' + skin + '"/>' +
+        '<ellipse cx="74" cy="72" rx="6" ry="10" fill="' + skin + '"/>' +
+        '<rect x="33" y="86" width="12" height="16" rx="5" fill="' + pantsC + '"/>' +
+        '<rect x="55" y="86" width="12" height="16" rx="5" fill="' + pantsC + '"/>' +
+        '<ellipse cx="39" cy="105" rx="9" ry="5.5" fill="' + shoeC + '"/>' +
+        '<ellipse cx="61" cy="105" rx="9" ry="5.5" fill="' + shoeC + '"/>' +
+        '<rect x="30" y="56" width="40" height="34" rx="13" fill="' + fit.c + '"/>' +
+        outfitDeco(fit.deco) +
+        speciesBack(c.species, skin) +
+        '<circle cx="50" cy="40" r="24" fill="' + skin + '"/>' +
+        speciesFront(c.species, skin) +
+        hair(c.hair, hairC, skin) + eyes(c.eyes) + mouth(c.mouth) +
+        accessory(c.accessory) + hat(c.hat, hatDef.c || '#EF4444') +
+      '</g></svg>';
+  }
+
+  function svg(cfg, opts) {
+    var o = opts || {};
+    if (o.flat) return flatSvg(cfg, o);
+    var c = sanitize(cfg);
+    var id = String(++uid);
     var skin = get('skin', c.skin).c;
     var hairC = get('hairColor', c.hairColor).c;
     var fit = get('outfit', c.outfit);
@@ -233,38 +389,63 @@
     var auraDef = get('aura', c.aura);
     var mood = o.mood || 'idle';
 
-    var body =
-      '<g class="mk-arms">' +
-        '<ellipse cx="26" cy="72" rx="6" ry="10" fill="' + skin + '"/>' +
-        '<ellipse cx="74" cy="72" rx="6" ry="10" fill="' + skin + '"/>' +
-      '</g>' +
+    /* ---- back plane: aura ---- */
+    var auraLayer = layer('mk-l-aura', '<g class="mk-aura">' + aura(c.aura, auraDef.c || '#FFD86B') + '</g>');
+
+    /* ---- mid plane: legs, torso, arms ---- */
+    var bodyInner =
+      shadingDefs(id, skin) +
       '<g class="mk-legs">' +
         '<rect x="33" y="86" width="12" height="16" rx="5" fill="' + pantsC + '"/>' +
         '<rect x="55" y="86" width="12" height="16" rx="5" fill="' + pantsC + '"/>' +
         '<ellipse cx="39" cy="105" rx="9" ry="5.5" fill="' + shoeC + '"/>' +
         '<ellipse cx="61" cy="105" rx="9" ry="5.5" fill="' + shoeC + '"/>' +
+        '<ellipse cx="39" cy="105" rx="9" ry="5.5" fill="url(#shade' + id + ')"/>' +
+        '<ellipse cx="61" cy="105" rx="9" ry="5.5" fill="url(#shade' + id + ')"/>' +
       '</g>' +
-      '<rect x="30" y="56" width="40" height="34" rx="13" fill="' + fit.c + '"/>' +
-      outfitDeco(fit.deco);
+      '<g class="mk-torso">' +
+        '<rect x="30" y="56" width="40" height="34" rx="13" fill="' + fit.c + '"/>' +
+        outfitDeco(fit.deco) +
+        '<rect x="30" y="56" width="40" height="34" rx="13" fill="url(#lit' + id + ')"/>' +
+        '<rect x="30" y="56" width="40" height="34" rx="13" fill="url(#shade' + id + ')"/>' +
+        '<rect x="30" y="56" width="40" height="34" rx="13" fill="url(#rim' + id + ')"/>' +
+      '</g>' +
+      '<g class="mk-arms">' +
+        '<ellipse cx="26" cy="72" rx="6" ry="10" fill="' + skin + '"/>' +
+        '<ellipse cx="74" cy="72" rx="6" ry="10" fill="' + skin + '"/>' +
+        '<ellipse cx="26" cy="72" rx="6" ry="10" fill="url(#shade' + id + ')"/>' +
+        '<ellipse cx="74" cy="72" rx="6" ry="10" fill="url(#rim' + id + ')"/>' +
+      '</g>';
 
-    var head =
+    /* ---- front plane: head, face, hat ---- */
+    var headInner =
       '<g class="mk-head">' +
-        '<circle cx="50" cy="40" r="24" fill="' + skin + '"/>' +
         '<ellipse cx="26" cy="42" rx="4" ry="6" fill="' + skin + '"/>' +
         '<ellipse cx="74" cy="42" rx="4" ry="6" fill="' + skin + '"/>' +
+        speciesBack(c.species, skin) +
+        '<circle cx="50" cy="40" r="24" fill="' + skin + '"/>' +
+        speciesFront(c.species, skin) +
+        // neck shadow under the chin sells the head sitting in front
+        '<ellipse cx="50" cy="62" rx="15" ry="5" fill="#1A0E2E" opacity=".16"/>' +
         hair(c.hair, hairC, skin) +
         eyes(c.eyes) +
         mouth(c.mouth) +
         accessory(c.accessory) +
+        '<circle cx="50" cy="40" r="24" fill="url(#lit' + id + ')" pointer-events="none"/>' +
+        '<circle cx="50" cy="40" r="24" fill="url(#shade' + id + ')" pointer-events="none"/>' +
+        '<circle cx="50" cy="40" r="24" fill="url(#rim' + id + ')" pointer-events="none"/>' +
         hat(c.hat, hatDef.c || '#EF4444') +
       '</g>';
 
-    return '<svg class="moki moki--' + mood + '" viewBox="0 0 100 112" ' +
-      'role="img" aria-label="MOKI character" focusable="false">' +
-      '<g class="mk-aura">' + aura(c.aura, auraDef.c || '#FFD86B') + '</g>' +
-      '<ellipse class="mk-shadow" cx="50" cy="108" rx="24" ry="4" fill="rgba(0,0,0,.18)"/>' +
-      '<g class="mk-body">' + body + head + '</g>' +
-      '</svg>';
+    return '<div class="moki moki3d moki--' + mood + '">' +
+      '<div class="mk-scene">' +
+        auraLayer +
+        layer('mk-l-body', bodyInner) +
+        layer('mk-l-head', headInner) +
+      '</div>' +
+      '<div class="mk-ground"></div>' +
+      '<span class="mk-sr">MOKI character</span>' +
+      '</div>';
   }
 
   function el(cfg, opts) {
