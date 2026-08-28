@@ -146,9 +146,17 @@
   function eyes(id) {
     switch (id) {
       case 'big':
-        return '<g><circle cx="41" cy="40" r="7" fill="#fff"/><circle cx="59" cy="40" r="7" fill="#fff"/>' +
-          '<circle cx="42" cy="41" r="3.6" fill="#22203A"/><circle cx="60" cy="41" r="3.6" fill="#22203A"/>' +
-          '<circle cx="40.5" cy="38.5" r="1.4" fill="#fff"/><circle cx="58.5" cy="38.5" r="1.4" fill="#fff"/></g>';
+        // eyeballs read as spheres: brow shadow on top, iris ring, a bright
+        // catchlight and a small secondary bounce highlight
+        return '<g>' +
+          '<circle cx="41" cy="40" r="7" fill="#fff"/><circle cx="59" cy="40" r="7" fill="#fff"/>' +
+          '<path d="M34 40a7 7 0 0 1 14 0z" fill="#1A1531" opacity=".14"/>' +
+          '<path d="M52 40a7 7 0 0 1 14 0z" fill="#1A1531" opacity=".14"/>' +
+          '<circle cx="42" cy="41" r="4" fill="#3B3566"/><circle cx="60" cy="41" r="4" fill="#3B3566"/>' +
+          '<circle cx="42" cy="41.4" r="2.6" fill="#15122B"/><circle cx="60" cy="41.4" r="2.6" fill="#15122B"/>' +
+          '<circle cx="40.4" cy="38.8" r="1.7" fill="#fff"/><circle cx="58.4" cy="38.8" r="1.7" fill="#fff"/>' +
+          '<circle cx="43.6" cy="43.2" r=".8" fill="#fff" opacity=".6"/>' +
+          '<circle cx="61.6" cy="43.2" r=".8" fill="#fff" opacity=".6"/></g>';
       case 'happy':
         return '<g fill="none" stroke="#22203A" stroke-width="3" stroke-linecap="round">' +
           '<path d="M36 42q5-7 10 0"/><path d="M54 42q5-7 10 0"/></g>';
@@ -174,7 +182,9 @@
           '<path d="M41 40m-6 0a6 6 0 1 0 12 0a6 6 0 1 0-12 0M41 40a3 3 0 0 1 3 3"/>' +
           '<path d="M59 40m-6 0a6 6 0 1 0 12 0a6 6 0 1 0-12 0M59 40a3 3 0 0 1 3 3"/></g>';
       default:
-        return '<g fill="#22203A"><circle cx="41" cy="40" r="4"/><circle cx="59" cy="40" r="4"/></g>';
+        return '<g><g fill="#22203A"><circle cx="41" cy="40" r="4.2"/><circle cx="59" cy="40" r="4.2"/></g>' +
+          '<circle cx="39.8" cy="38.6" r="1.3" fill="#fff" opacity=".9"/>' +
+          '<circle cx="57.8" cy="38.6" r="1.3" fill="#fff" opacity=".9"/></g>';
     }
   }
 
@@ -313,23 +323,47 @@
      on the page wins for everybody. */
   var uid = 0;
 
-  function shadingDefs(id, skin) {
+  /* Volume comes from gradients built out of the character's OWN colours -
+     a light-grey wash over everything reads as fog, not form. Light sits upper
+     left, so every part is lit on that side, dark on the lower right, with a
+     cool bounce light coming back up from the floor. */
+  function volume(id, name, base, opts) {
+    var o = opts || {};
+    return '<radialGradient id="' + name + id + '" cx="' + (o.cx || '34%') + '" cy="' + (o.cy || '26%') +
+        '" r="' + (o.r || '82%') + '" fx="' + (o.cx || '34%') + '" fy="' + (o.cy || '26%') + '">' +
+        '<stop offset="0%" stop-color="' + tint(base, o.hi == null ? 46 : o.hi) + '"/>' +
+        '<stop offset="42%" stop-color="' + base + '"/>' +
+        '<stop offset="82%" stop-color="' + tint(base, o.lo == null ? -30 : o.lo) + '"/>' +
+        '<stop offset="100%" stop-color="' + tint(base, o.edge == null ? -52 : o.edge) + '"/>' +
+      '</radialGradient>';
+  }
+
+  function shadingDefs(id, skin, outfitC, pantsC, shoeC) {
     return '<defs>' +
-      // roundness: light from the upper left, shadow to the lower right
-      '<radialGradient id="lit' + id + '" cx="32%" cy="26%" r="78%">' +
-        '<stop offset="0%" stop-color="#fff" stop-opacity=".55"/>' +
-        '<stop offset="45%" stop-color="#fff" stop-opacity=".10"/>' +
+      volume(id, 'gSkin', skin) +
+      volume(id, 'gFit', outfitC, { cx: '32%', cy: '18%', r: '92%' }) +
+      volume(id, 'gPant', pantsC, { cx: '34%', cy: '10%', r: '95%', hi: 34, lo: -26 }) +
+      volume(id, 'gShoe', shoeC, { cx: '30%', cy: '20%', r: '90%', hi: 40, lo: -34 }) +
+
+      // ambient occlusion: soft contact darkness where two parts meet
+      '<radialGradient id="ao' + id + '" cx="50%" cy="50%" r="50%">' +
+        '<stop offset="0%" stop-color="#150B26" stop-opacity=".46"/>' +
+        '<stop offset="60%" stop-color="#150B26" stop-opacity=".18"/>' +
+        '<stop offset="100%" stop-color="#150B26" stop-opacity="0"/>' +
+      '</radialGradient>' +
+
+      // specular: the small bright kick that says "this surface is glossy"
+      '<radialGradient id="spec' + id + '" cx="50%" cy="50%" r="50%">' +
+        '<stop offset="0%" stop-color="#fff" stop-opacity=".85"/>' +
+        '<stop offset="55%" stop-color="#fff" stop-opacity=".22"/>' +
         '<stop offset="100%" stop-color="#fff" stop-opacity="0"/>' +
       '</radialGradient>' +
-      '<radialGradient id="shade' + id + '" cx="72%" cy="78%" r="70%">' +
-        '<stop offset="0%" stop-color="#1A0E2E" stop-opacity=".40"/>' +
-        '<stop offset="55%" stop-color="#1A0E2E" stop-opacity=".12"/>' +
-        '<stop offset="100%" stop-color="#1A0E2E" stop-opacity="0"/>' +
-      '</radialGradient>' +
-      // rim light along the right edge, the thing that really reads as 3D
-      '<linearGradient id="rim' + id + '" x1="0%" y1="0%" x2="100%" y2="30%">' +
-        '<stop offset="60%" stop-color="#fff" stop-opacity="0"/>' +
-        '<stop offset="100%" stop-color="#CDE7FF" stop-opacity=".55"/>' +
+
+      // bounce light climbing the lower-right edge, which separates the
+      // silhouette from the background and reads strongly as depth
+      '<linearGradient id="bounce' + id + '" x1="10%" y1="0%" x2="95%" y2="85%">' +
+        '<stop offset="55%" stop-color="#9BD4FF" stop-opacity="0"/>' +
+        '<stop offset="100%" stop-color="#9BD4FF" stop-opacity=".42"/>' +
       '</linearGradient>' +
       '</defs>';
   }
@@ -394,53 +428,65 @@
 
     /* ---- mid plane: legs, torso, arms ---- */
     var bodyInner =
-      shadingDefs(id, skin) +
+      shadingDefs(id, skin, fit.c, pantsC, shoeC) +
       '<g class="mk-legs">' +
-        '<rect x="33" y="86" width="12" height="16" rx="5" fill="' + pantsC + '"/>' +
-        '<rect x="55" y="86" width="12" height="16" rx="5" fill="' + pantsC + '"/>' +
-        '<ellipse cx="39" cy="105" rx="9" ry="5.5" fill="' + shoeC + '"/>' +
-        '<ellipse cx="61" cy="105" rx="9" ry="5.5" fill="' + shoeC + '"/>' +
-        '<ellipse cx="39" cy="105" rx="9" ry="5.5" fill="url(#shade' + id + ')"/>' +
-        '<ellipse cx="61" cy="105" rx="9" ry="5.5" fill="url(#shade' + id + ')"/>' +
+        '<rect x="33" y="86" width="12" height="16" rx="5" fill="url(#gPant' + id + ')"/>' +
+        '<rect x="55" y="86" width="12" height="16" rx="5" fill="url(#gPant' + id + ')"/>' +
+        // shoes, with a highlight along the top of the toe
+        '<ellipse cx="39" cy="105" rx="9" ry="5.5" fill="url(#gShoe' + id + ')"/>' +
+        '<ellipse cx="61" cy="105" rx="9" ry="5.5" fill="url(#gShoe' + id + ')"/>' +
+        '<ellipse cx="37" cy="102" rx="4.5" ry="1.6" fill="url(#spec' + id + ')"/>' +
+        '<ellipse cx="59" cy="102" rx="4.5" ry="1.6" fill="url(#spec' + id + ')"/>' +
+        // contact shadow where each leg meets its shoe
+        '<ellipse cx="39" cy="101" rx="7" ry="3" fill="url(#ao' + id + ')"/>' +
+        '<ellipse cx="61" cy="101" rx="7" ry="3" fill="url(#ao' + id + ')"/>' +
       '</g>' +
       '<g class="mk-torso">' +
-        '<rect x="30" y="56" width="40" height="34" rx="13" fill="' + fit.c + '"/>' +
+        '<rect x="30" y="56" width="40" height="34" rx="13" fill="url(#gFit' + id + ')"/>' +
         outfitDeco(fit.deco) +
-        '<rect x="30" y="56" width="40" height="34" rx="13" fill="url(#lit' + id + ')"/>' +
-        '<rect x="30" y="56" width="40" height="34" rx="13" fill="url(#shade' + id + ')"/>' +
-        '<rect x="30" y="56" width="40" height="34" rx="13" fill="url(#rim' + id + ')"/>' +
+        // occlusion where the torso meets the hips
+        '<ellipse cx="50" cy="89" rx="19" ry="6" fill="url(#ao' + id + ')"/>' +
+        '<rect x="30" y="56" width="40" height="34" rx="13" fill="url(#bounce' + id + ')"/>' +
+        // chest highlight
+        '<ellipse cx="41" cy="65" rx="8" ry="6" fill="url(#spec' + id + ')" opacity=".5"/>' +
       '</g>' +
       '<g class="mk-arms">' +
-        '<ellipse cx="26" cy="72" rx="6" ry="10" fill="' + skin + '"/>' +
-        '<ellipse cx="74" cy="72" rx="6" ry="10" fill="' + skin + '"/>' +
-        '<ellipse cx="26" cy="72" rx="6" ry="10" fill="url(#shade' + id + ')"/>' +
-        '<ellipse cx="74" cy="72" rx="6" ry="10" fill="url(#rim' + id + ')"/>' +
+        '<ellipse cx="26" cy="72" rx="6" ry="10" fill="url(#gSkin' + id + ')"/>' +
+        '<ellipse cx="74" cy="72" rx="6" ry="10" fill="url(#gSkin' + id + ')"/>' +
+        // arms are darkest where they tuck behind the torso
+        '<ellipse cx="30" cy="70" rx="5" ry="9" fill="url(#ao' + id + ')"/>' +
+        '<ellipse cx="70" cy="70" rx="5" ry="9" fill="url(#ao' + id + ')"/>' +
+        '<ellipse cx="74" cy="72" rx="6" ry="10" fill="url(#bounce' + id + ')"/>' +
       '</g>';
 
     /* ---- front plane: head, face, hat ---- */
     var headInner =
       '<g class="mk-head">' +
-        '<ellipse cx="26" cy="42" rx="4" ry="6" fill="' + skin + '"/>' +
-        '<ellipse cx="74" cy="42" rx="4" ry="6" fill="' + skin + '"/>' +
+        // ears sit behind and catch less light
+        '<ellipse cx="26" cy="42" rx="4" ry="6" fill="' + tint(skin, -26) + '"/>' +
+        '<ellipse cx="74" cy="42" rx="4" ry="6" fill="' + tint(skin, -26) + '"/>' +
         speciesBack(c.species, skin) +
-        '<circle cx="50" cy="40" r="24" fill="' + skin + '"/>' +
+        '<circle cx="50" cy="40" r="24" fill="url(#gSkin' + id + ')"/>' +
         speciesFront(c.species, skin) +
-        // neck shadow under the chin sells the head sitting in front
-        '<ellipse cx="50" cy="62" rx="15" ry="5" fill="#1A0E2E" opacity=".16"/>' +
         hair(c.hair, hairC, skin) +
+        // the hair casts onto the forehead
+        '<ellipse cx="50" cy="26" rx="21" ry="7" fill="url(#ao' + id + ')" opacity=".7"/>' +
         eyes(c.eyes) +
         mouth(c.mouth) +
         accessory(c.accessory) +
-        '<circle cx="50" cy="40" r="24" fill="url(#lit' + id + ')" pointer-events="none"/>' +
-        '<circle cx="50" cy="40" r="24" fill="url(#shade' + id + ')" pointer-events="none"/>' +
-        '<circle cx="50" cy="40" r="24" fill="url(#rim' + id + ')" pointer-events="none"/>' +
+        // bounce along the lower-right of the skull, then the specular kick
+        '<circle cx="50" cy="40" r="24" fill="url(#bounce' + id + ')" pointer-events="none"/>' +
+        '<ellipse cx="39" cy="27" rx="9" ry="6.5" fill="url(#spec' + id + ')" pointer-events="none"/>' +
         hat(c.hat, hatDef.c || '#EF4444') +
+        // the hat brim casts onto the face
+        (c.hat !== 'none' ? '<ellipse cx="50" cy="30" rx="20" ry="6" fill="url(#ao' + id + ')" opacity=".55" pointer-events="none"/>' : '') +
       '</g>';
 
     return '<div class="moki moki3d moki--' + mood + '">' +
       '<div class="mk-scene">' +
         auraLayer +
-        layer('mk-l-body', bodyInner) +
+        layer('mk-l-body', bodyInner +
+          '<ellipse cx="50" cy="60" rx="17" ry="7" fill="url(#ao' + id + ')"/>') +
         layer('mk-l-head', headInner) +
       '</div>' +
       '<div class="mk-ground"></div>' +
