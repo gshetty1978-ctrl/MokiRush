@@ -14,3 +14,9 @@ services:
       # free tier wipes on every deploy.
       - key: DATABASE_URL
         sync: false
+      # Set to 1 to stop the free instance sleeping (see README).
+      - key: KEEP_AWAKE
+        value: "0"
+      # Optional quiet hours in UTC, e.g. 2-18 covers ~07:30-23:30 IST.
+      - key: KEEP_AWAKE_HOURS
+        sync: false

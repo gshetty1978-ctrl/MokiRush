@@ -157,6 +157,39 @@ browser fetches only the scripts actually on screen - 33KB for Latin.
 
 ---
 
+## Keeping the service awake
+
+A Render free web service sleeps after ~15 minutes with no traffic, and the
+next visitor waits 30-60s for it to boot. That is rough when a room full of
+people is trying to join at once.
+
+`waker.js` pings the service every ~12 minutes to keep it warm. It is off
+unless you turn it on:
+
+| Variable | Value |
+| --- | --- |
+| `KEEP_AWAKE` | `1` to enable |
+| `KEEP_AWAKE_HOURS` | optional UTC window, e.g. `2-18` |
+| `KEEP_AWAKE_MINUTES` | optional, default 12, capped at 14 |
+| `PUBLIC_URL` | only if `RENDER_EXTERNAL_URL` is not set |
+
+The startup log says which mode it is in. It refuses to ping localhost, so it
+never runs during local development.
+
+**Read this before enabling it.** A free instance gets ~750 hours a month and
+staying awake 24/7 burns ~720, so:
+
+- run only ONE always-awake free service on the account, and
+- prefer `KEEP_AWAKE_HOURS` to stay warm only when people actually play.
+  `KEEP_AWAKE_HOURS=2-18` is roughly 07:30-23:30 IST and uses ~500 hours.
+
+An external pinger (UptimeRobot, cron-job.org) does the same job without
+spending the app’s own hours on the requests, and keeps working even if the
+instance has already fallen asleep - a self-ping cannot wake a service that is
+already down. Point either at `/healthz`.
+
+---
+
 ## Joining by QR
 
 The host lobby shows a QR code next to the PIN. It encodes `<origin>/#<pin>`, and

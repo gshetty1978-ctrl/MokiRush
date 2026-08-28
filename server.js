@@ -7,6 +7,7 @@ const CATALOG = require('./public/js/moki-catalog.js');
 const BANK = require('./question-bank.js');
 const { create: createStore, normalizeCode } = require('./store.js');
 const { createLimiter, createSocketLimiter } = require('./ratelimit.js');
+const waker = require('./waker.js');
 
 const store = createStore();
 
@@ -767,5 +768,9 @@ store.init()
   .then(where => console.log('MOKI quiz library: ' + where))
   .catch(err => console.error('MOKI quiz library unavailable:', err.message))
   .finally(() => {
-    server.listen(PORT, () => console.log('MOKI running on http://localhost:' + PORT));
+    server.listen(PORT, () => {
+      console.log('MOKI running on http://localhost:' + PORT);
+      const keep = waker.start();
+      if (!keep.enabled) console.log('MOKI keep-awake: off (' + keep.reason + ')');
+    });
   });
