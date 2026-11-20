@@ -42,7 +42,7 @@
 .moki--wave .mk-arms{animation:wave 1.5s ease-in-out infinite;transform-origin:74px 68px}
 @keyframes wave{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(26deg)}}
 .speech{
-  position:absolute;top:-4px;left:-18px;background:#fff;color:var(--ink);font-weight:900;
+  position:absolute;top:-4px;left:-18px;z-index:2;background:#fff;color:var(--ink);font-weight:900;
   font-size:14px;padding:8px 12px;border-radius:14px;box-shadow:var(--shadow-sm);white-space:nowrap;
   animation:bob 2.6s ease-in-out infinite
 }
@@ -138,11 +138,12 @@
 .topic{
   cursor:pointer;border:3px solid transparent;border-radius:var(--r-md);padding:16px 10px;
   font-family:var(--font);font-weight:900;font-size:16px;color:#fff;text-align:center;
-  background:rgba(255,255,255,.14);transition:transform .14s,border-color .14s,background .14s
+  background:rgba(255,255,255,.14);background-size:cover;background-position:center;
+  transition:transform .14s,border-color .14s,background-color .14s;text-shadow:0 2px 3px rgba(0,0,0,.4)
 }
 .topic:hover{transform:translateY(-4px)}
 .topic:focus-visible{outline:4px solid #fff;outline-offset:3px}
-.topic.on{border-color:var(--sun);background:rgba(255,216,107,.3)}
+.topic.on{border-color:var(--sun);box-shadow:inset 0 0 0 100px rgba(255,216,107,.3)}
 .topic .emoji{display:block;font-size:30px;margin-bottom:4px}
 .seg{display:flex;gap:8px;flex-wrap:wrap}
 .seg button{

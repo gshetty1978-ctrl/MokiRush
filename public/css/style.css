@@ -166,7 +166,7 @@ label{font-weight:800;font-size:14px;display:block;margin-bottom:6px;color:var(-
   background:#fff;border-radius:var(--r-lg);padding:26px 22px;margin:14px 0;
   font-size:clamp(21px,3.4vw,36px);font-weight:900;text-align:center;box-shadow:var(--shadow)
 }
-.qimg{display:block;max-height:230px;max-width:100%;margin:0 auto 14px;border-radius:var(--r-md);box-shadow:var(--shadow-sm)}
+.qimg{display:block;max-height:230px;max-width:100%;margin:0 auto 14px;border-radius:var(--r-md);box-shadow:var(--shadow-sm);transition:filter .3s linear}
 .answers{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .ans{
   font-family:var(--font);border:none;cursor:pointer;color:#fff;font-weight:900;

@@ -60,7 +60,8 @@ function isSafeImage(url) {
   if (typeof url !== 'string' || !url) return false;
   if (url.length > LIMITS.image) return false;
   return /^https:\/\/[^\s"']+$/i.test(url) ||
-    /^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(url);
+    /^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(url) ||
+    /^\/icons\/topics\/[a-z]+\.jpg$/.test(url);
 }
 function newPin() {
   let pin, guard = 0;

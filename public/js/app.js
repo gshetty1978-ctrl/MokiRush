@@ -599,11 +599,24 @@
     { id: 'space',      name: 'Space',   emoji: '🚀' },
     { id: 'movies',     name: 'Movies',  emoji: '🎬' },
     { id: 'gaming',     name: 'Games',   emoji: '🎮' },
+    { id: 'coding',     name: 'Coding',  emoji: '💻' },
     { id: 'sports',     name: 'Sports',  emoji: '⚽' },
     { id: 'animals',    name: 'Animals', emoji: '🐾' },
     { id: 'history',    name: 'History', emoji: '🏺' },
     { id: 'geography',  name: 'World',   emoji: '🌍' },
+    { id: 'flags',      name: 'Flags',   emoji: '🚩' },
+    { id: 'food',       name: 'Food',    emoji: '🍔' },
     { id: 'music',      name: 'Music',   emoji: '🎵' },
+    { id: 'mythology',  name: 'Myths',   emoji: '⚡' },
+    { id: 'inventions', name: 'Inventions', emoji: '💡' },
+    { id: 'art',        name: 'Art',     emoji: '🎨' },
+    { id: 'beforeafter', name: 'Before/After', emoji: '⏳' },
+    { id: 'brands',     name: 'Brands',  emoji: '🏷️' },
+    { id: 'anime',      name: 'Anime',   emoji: '🀄' },
+    { id: 'nineties',   name: '90s',     emoji: '📼' },
+    { id: 'y2k',        name: '2000s',   emoji: '💿' },
+    { id: 'lightning',  name: 'Lightning', emoji: '⚡' },
+    { id: 'blurimage',  name: 'Blur Reveal', emoji: '🌫️' },
     { id: '__random',   name: 'Random',  emoji: '🎲' },
     { id: '__custom',   name: 'Custom',  emoji: '✏️' }
   ];
@@ -622,6 +635,13 @@
       b.type = 'button';
       b.className = 'topic' + (cfg.topic === t.id ? ' on' : '');
       b.innerHTML = '<span class="emoji">' + t.emoji + '</span>' + esc(t.name);
+      if (t.id.indexOf('__') !== 0) {
+        var img = new Image();
+        img.onload = function () {
+          b.style.backgroundImage = 'linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.5)), url(' + img.src + ')';
+        };
+        img.src = '/icons/topics/' + t.id + '.jpg';
+      }
       b.onclick = function () {
         cfg.topic = t.id;
         SFX.tap();
@@ -685,7 +705,7 @@
           return;
         }
         var qs = res.d.questions.map(function (q) {
-          return { text: q.text, answers: q.answers, correct: q.correct, time: cfg.time, image: '' };
+          return { text: q.text, answers: q.answers, correct: q.correct, time: cfg.time, image: q.image || '' };
         });
         msgBox(kind + 'Msg', '');
         done({
@@ -1005,7 +1025,7 @@
     $('qScore').textContent = me.role === 'host' ? 'HOST SCREEN' : me.score + ' pts';
     $('qText').textContent = q.text;
     var img = $('qImage');
-    if (q.image) { img.src = q.image; img.hidden = false; } else { img.hidden = true; img.removeAttribute('src'); }
+    if (q.image) { img.src = q.image; img.hidden = false; img.style.filter = 'blur(14px)'; } else { img.hidden = true; img.removeAttribute('src'); img.style.filter = ''; }
 
     var host = $('qAnswers');
     host.innerHTML = '';
